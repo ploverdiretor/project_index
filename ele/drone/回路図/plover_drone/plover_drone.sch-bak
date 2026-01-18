@@ -1,0 +1,411 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L plover_Library02:XIAO_ESP32C3 BD?
+U 1 1 66241DAF
+P 9200 3750
+F 0 "BD?" H 9200 4275 50  0000 C CNN
+F 1 "XIAO_ESP32C3" H 9200 4184 50  0000 C CNN
+F 2 "" H 9200 3750 50  0001 C CNN
+F 3 "" H 9200 3750 50  0001 C CNN
+	1    9200 3750
+	1    0    0    -1  
+$EndComp
+$Comp
+L plover_Library01:TinyFPGA_AX2 BD?
+U 1 1 66242578
+P 5550 4900
+F 0 "BD?" H 5550 5365 50  0000 C CNN
+F 1 "TinyFPGA_AX2" H 5550 5274 50  0000 C CNN
+F 2 "" H 5550 4900 50  0001 C CNN
+F 3 "" H 5550 4900 50  0001 C CNN
+	1    5550 4900
+	1    0    0    -1  
+$EndComp
+$Comp
+L plover_Library02:ESC-15A BD?
+U 1 1 662434AE
+P 5500 2600
+F 0 "BD?" H 5750 3250 50  0000 C CNN
+F 1 "ESC-15A" H 5850 3150 50  0000 C CNN
+F 2 "" H 5500 2600 50  0001 C CNN
+F 3 "" H 5500 2600 50  0001 C CNN
+	1    5500 2600
+	1    0    0    -1  
+$EndComp
+$Comp
+L plover_Library01:BNO055 BD?
+U 1 1 6624444D
+P 7100 1950
+F 0 "BD?" H 7100 2325 50  0000 C CNN
+F 1 "BNO055" H 7100 2234 50  0000 C CNN
+F 2 "" H 7100 1790 50  0001 C CNN
+F 3 "" H 7100 1790 50  0001 C CNN
+	1    7100 1950
+	1    0    0    -1  
+$EndComp
+Text HLabel 4150 4900 0    50   UnSpc ~ 0
+xRES
+Wire Wire Line
+	4150 4900 5050 4900
+$Comp
+L power:GND #PWR?
+U 1 1 66244F11
+P 5250 3950
+F 0 "#PWR?" H 5250 3700 50  0001 C CNN
+F 1 "GND" H 5255 3777 50  0000 C CNN
+F 2 "" H 5250 3950 50  0001 C CNN
+F 3 "" H 5250 3950 50  0001 C CNN
+	1    5250 3950
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 66245458
+P 6200 4600
+F 0 "#PWR?" H 6200 4450 50  0001 C CNN
+F 1 "+3V3" H 6215 4773 50  0000 C CNN
+F 2 "" H 6200 4600 50  0001 C CNN
+F 3 "" H 6200 4600 50  0001 C CNN
+	1    6200 4600
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+BATT #PWR?
+U 1 1 66245E16
+P 5600 1450
+F 0 "#PWR?" H 5600 1300 50  0001 C CNN
+F 1 "+BATT" H 5615 1623 50  0000 C CNN
+F 2 "" H 5600 1450 50  0001 C CNN
+F 3 "" H 5600 1450 50  0001 C CNN
+	1    5600 1450
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:VCC #PWR?
+U 1 1 66246937
+P 4800 3200
+F 0 "#PWR?" H 4800 3050 50  0001 C CNN
+F 1 "VCC" H 4815 3373 50  0000 C CNN
+F 2 "" H 4800 3200 50  0001 C CNN
+F 3 "" H 4800 3200 50  0001 C CNN
+	1    4800 3200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4800 3200 4800 3300
+Wire Wire Line
+	4800 3300 5350 3300
+Wire Wire Line
+	5350 3300 5350 3200
+Text HLabel 4000 3400 0    50   UnSpc ~ 0
+PWM1
+Text HLabel 4000 3500 0    50   UnSpc ~ 0
+PWM2
+Text HLabel 4000 3600 0    50   UnSpc ~ 0
+PWM3
+Text HLabel 4000 3700 0    50   UnSpc ~ 0
+PWM4
+Wire Wire Line
+	5250 3200 5250 3950
+Wire Wire Line
+	5450 3200 5450 3400
+Wire Wire Line
+	5450 3400 4000 3400
+Wire Wire Line
+	5550 3200 5550 3500
+Wire Wire Line
+	5550 3500 4000 3500
+Wire Wire Line
+	5650 3200 5650 3700
+Wire Wire Line
+	5650 3700 4000 3700
+Wire Wire Line
+	5750 3200 5750 3600
+Wire Wire Line
+	5750 3600 4000 3600
+Text HLabel 4150 5200 0    50   UnSpc ~ 0
+PWM1
+Text HLabel 4150 5300 0    50   UnSpc ~ 0
+PWM2
+Text HLabel 6600 4900 2    50   UnSpc ~ 0
+PWM3
+Text HLabel 6600 4800 2    50   UnSpc ~ 0
+PWM4
+Wire Wire Line
+	6600 4800 6050 4800
+Wire Wire Line
+	6600 4900 6050 4900
+Wire Wire Line
+	6200 4600 6200 4700
+Wire Wire Line
+	6200 4700 6050 4700
+$Comp
+L power:GND #PWR?
+U 1 1 6624BD8E
+P 4900 5950
+F 0 "#PWR?" H 4900 5700 50  0001 C CNN
+F 1 "GND" H 4905 5777 50  0000 C CNN
+F 2 "" H 4900 5950 50  0001 C CNN
+F 3 "" H 4900 5950 50  0001 C CNN
+	1    4900 5950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5050 4700 4900 4700
+Wire Wire Line
+	4900 4700 4900 5950
+Wire Wire Line
+	4150 5200 5050 5200
+Wire Wire Line
+	4150 5300 5050 5300
+Text HLabel 7750 3850 0    50   UnSpc ~ 0
+SDA
+Text HLabel 7750 3950 0    50   UnSpc ~ 0
+SCL
+Wire Wire Line
+	7750 3850 8200 3850
+Wire Wire Line
+	7750 3950 8000 3950
+$Comp
+L plover_Library03:D_Small_ALT D?
+U 1 1 6624DF0C
+P 1850 4300
+F 0 "D?" H 1850 4507 50  0000 C CNN
+F 1 "D_Small_ALT" H 1850 4416 50  0000 C CNN
+F 2 "" V 1850 4300 50  0001 C CNN
+F 3 "~" V 1850 4300 50  0001 C CNN
+	1    1850 4300
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Regulator_Linear:LF33_TO220 U?
+U 1 1 6624FF08
+P 2650 4300
+F 0 "U?" H 2650 4542 50  0000 C CNN
+F 1 "LF33_TO220" H 2650 4451 50  0000 C CNN
+F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 2650 4525 50  0001 C CIN
+F 3 "http://www.st.com/content/ccc/resource/technical/document/datasheet/c4/0e/7e/2a/be/bc/4c/bd/CD00000546.pdf/files/CD00000546.pdf/jcr:content/translations/en.CD00000546.pdf" H 2650 4250 50  0001 C CNN
+	1    2650 4300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1950 4300 2350 4300
+$Comp
+L power:VCC #PWR?
+U 1 1 662540FA
+P 1450 4200
+F 0 "#PWR?" H 1450 4050 50  0001 C CNN
+F 1 "VCC" H 1465 4373 50  0000 C CNN
+F 2 "" H 1450 4200 50  0001 C CNN
+F 3 "" H 1450 4200 50  0001 C CNN
+	1    1450 4200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 66254682
+P 3100 4250
+F 0 "#PWR?" H 3100 4100 50  0001 C CNN
+F 1 "+3V3" H 3115 4423 50  0000 C CNN
+F 2 "" H 3100 4250 50  0001 C CNN
+F 3 "" H 3100 4250 50  0001 C CNN
+	1    3100 4250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3100 4250 3100 4300
+Wire Wire Line
+	3100 4300 2950 4300
+Wire Wire Line
+	1750 4300 1450 4300
+Wire Wire Line
+	1450 4300 1450 4200
+$Comp
+L power:GND #PWR?
+U 1 1 66255400
+P 2650 4700
+F 0 "#PWR?" H 2650 4450 50  0001 C CNN
+F 1 "GND" H 2655 4527 50  0000 C CNN
+F 2 "" H 2650 4700 50  0001 C CNN
+F 3 "" H 2650 4700 50  0001 C CNN
+	1    2650 4700
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2650 4700 2650 4600
+$Comp
+L power:+3V3 #PWR?
+U 1 1 6625887A
+P 9900 3250
+F 0 "#PWR?" H 9900 3100 50  0001 C CNN
+F 1 "+3V3" H 9915 3423 50  0000 C CNN
+F 2 "" H 9900 3250 50  0001 C CNN
+F 3 "" H 9900 3250 50  0001 C CNN
+	1    9900 3250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9900 3250 9900 3650
+Wire Wire Line
+	9900 3650 9700 3650
+$Comp
+L power:GND #PWR?
+U 1 1 66259C07
+P 9800 4150
+F 0 "#PWR?" H 9800 3900 50  0001 C CNN
+F 1 "GND" H 9805 3977 50  0000 C CNN
+F 2 "" H 9800 4150 50  0001 C CNN
+F 3 "" H 9800 4150 50  0001 C CNN
+	1    9800 4150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9800 4150 9800 3550
+Wire Wire Line
+	9800 3550 9700 3550
+$Comp
+L plover_Library03:R_POT_Small RV?
+U 1 1 6625AB0C
+P 8500 3450
+F 0 "RV?" H 8440 3404 50  0000 R CNN
+F 1 "10kB" H 8440 3495 50  0000 R CNN
+F 2 "" H 8500 3450 50  0001 C CNN
+F 3 "~" H 8500 3450 50  0001 C CNN
+	1    8500 3450
+	1    0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 6625C669
+P 8500 4150
+F 0 "#PWR?" H 8500 3900 50  0001 C CNN
+F 1 "GND" H 8505 3977 50  0000 C CNN
+F 2 "" H 8500 4150 50  0001 C CNN
+F 3 "" H 8500 4150 50  0001 C CNN
+	1    8500 4150
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 6625C8D0
+P 8500 3250
+F 0 "#PWR?" H 8500 3100 50  0001 C CNN
+F 1 "+3V3" H 8515 3423 50  0000 C CNN
+F 2 "" H 8500 3250 50  0001 C CNN
+F 3 "" H 8500 3250 50  0001 C CNN
+	1    8500 3250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8500 3250 8500 3350
+Wire Wire Line
+	8500 3550 8500 4150
+Wire Wire Line
+	8600 3450 8700 3450
+Text HLabel 4600 5700 0    50   UnSpc ~ 0
+SDA
+Text HLabel 4600 5800 0    50   UnSpc ~ 0
+SCL
+Wire Wire Line
+	4600 5700 5050 5700
+Wire Wire Line
+	4600 5800 5050 5800
+Wire Wire Line
+	5600 1450 5600 2000
+$Comp
+L power:-BATT #PWR?
+U 1 1 66261B5A
+P 5400 1450
+F 0 "#PWR?" H 5400 1300 50  0001 C CNN
+F 1 "-BATT" H 5415 1623 50  0000 C CNN
+F 2 "" H 5400 1450 50  0001 C CNN
+F 3 "" H 5400 1450 50  0001 C CNN
+	1    5400 1450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5400 1450 5400 2000
+$Comp
+L plover_Library03:R_Small_US R?
+U 1 1 66262F2D
+P 8000 3450
+F 0 "R?" H 7600 3500 50  0000 L CNN
+F 1 "10k" H 7600 3400 50  0000 L CNN
+F 2 "" H 8000 3450 50  0001 C CNN
+F 3 "~" H 8000 3450 50  0001 C CNN
+	1    8000 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L plover_Library03:R_Small_US R?
+U 1 1 66263FCC
+P 8200 3450
+F 0 "R?" H 7800 3500 50  0000 L CNN
+F 1 "10k" H 7800 3400 50  0000 L CNN
+F 2 "" H 8200 3450 50  0001 C CNN
+F 3 "~" H 8200 3450 50  0001 C CNN
+	1    8200 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 66269F86
+P 8200 3250
+F 0 "#PWR?" H 8200 3100 50  0001 C CNN
+F 1 "+3V3" H 8215 3423 50  0000 C CNN
+F 2 "" H 8200 3250 50  0001 C CNN
+F 3 "" H 8200 3250 50  0001 C CNN
+	1    8200 3250
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 6626A364
+P 8000 3250
+F 0 "#PWR?" H 8000 3100 50  0001 C CNN
+F 1 "+3V3" H 8015 3423 50  0000 C CNN
+F 2 "" H 8000 3250 50  0001 C CNN
+F 3 "" H 8000 3250 50  0001 C CNN
+	1    8000 3250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8200 3250 8200 3350
+Wire Wire Line
+	8000 3250 8000 3350
+Wire Wire Line
+	8000 3550 8000 3950
+Connection ~ 8000 3950
+Wire Wire Line
+	8000 3950 8700 3950
+Wire Wire Line
+	8200 3550 8200 3850
+Connection ~ 8200 3850
+Wire Wire Line
+	8200 3850 8700 3850
+$Comp
+L plover_Library01:XO2-1200HC4SG32C IC?
+U 1 1 664F44E2
+P 9150 5500
+F 0 "IC?" H 9150 6515 50  0000 C CNN
+F 1 "XO2-1200HC4SG32C" H 9150 6424 50  0000 C CNN
+F 2 "" H 9150 6400 50  0001 C CNN
+F 3 "" H 9150 6400 50  0001 C CNN
+	1    9150 5500
+	1    0    0    -1  
+$EndComp
+$EndSCHEMATC
