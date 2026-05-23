@@ -1,0 +1,187 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻婆豆腐 - レシピ</title>
+    <style>
+        :root {
+            --primary-color: #c0392b;
+            --accent-color: #d35400;
+            --text-color: #2c3e50;
+            --bg-color: #f9f9f9;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .recipe-container {
+            max-width: 680px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .recipe-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: #fff;
+            padding: 30px 25px;
+            text-align: center;
+        }
+
+        .recipe-title {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .recipe-source {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .recipe-body {
+            padding: 30px 25px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 6px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .ingredients-list {
+            list-style: none;
+            margin-bottom: 35px;
+        }
+
+        .ingredients-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #e0e0e0;
+            font-size: 15px;
+        }
+
+        .ingredients-list li:last-child {
+            border-bottom: none;
+        }
+
+        .steps-list {
+            list-style: none;
+        }
+
+        .steps-list li {
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        .steps-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-number {
+            position: absolute;
+            left: 0;
+            top: 2px;
+            background-color: var(--primary-color);
+            color: #fff;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 26px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 15px 10px;
+            }
+            .recipe-header {
+                padding: 25px 15px;
+            }
+            .recipe-title {
+                font-size: 20px;
+            }
+            .recipe-body {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <article class="recipe-container">
+        <header class="recipe-header">
+            <h1 class="recipe-title">麻婆豆腐</h1>
+            <p class="recipe-source">出典：リュウジのバズレシピ</p>
+        </header>
+
+        <div class="recipe-body">
+            <section>
+                <h2 class="section-title">材料</h2>
+                <ul class="ingredients-list">
+                    <li><span>長ネギ</span><span>25g</span></li>
+                    <li><span>長ネギの青いところ</span><span>適量</span></li>
+                    <li><span>合い挽き肉</span><span>90g</span></li>
+                    <li><span>木綿豆腐</span><span>150g</span></li>
+                    <li><span>牛脂</span><span>1個</span></li>
+                    <li><span>にんにく</span><span>5g</span></li>
+                    <li><span>生姜</span><span>5g</span></li>
+                    <li><span>豆板醤</span><span>小さじ1半</span></li>
+                    <li><span>甜麺醤</span><span>小さじ1半</span></li>
+                    <li><span>水</span><span>100cc</span></li>
+                    <li><span>鶏ガラスープの素</span><span>小さじ1</span></li>
+                    <li><span>味の素</span><span>小さじ2／3</span></li>
+                    <li><span>醤油</span><span>小さじ2/3</span></li>
+                    <li><span>酒</span><span>小さじ1/2</span></li>
+                    <li><span>水溶き片栗粉</span><span>大さじ1</span></li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="section-title">作り方</h2>
+                <ol class="steps-list">
+                    <li>
+                        <span class="step-number">1</span>
+                        <p>ごま油大さじ1と牛脂1個を合挽き肉180gと炒め、にんにく10g、生姜10g入れ炒め、豆板醤小さじ1半、甜麺醤小さじ1半入れ炒める</p>
+                    </li>
+                    <li>
+                        <span class="step-number">2</span>
+                        <p>水100ccと鶏ガラスープの素小さじ1、醤油小さじ2/3、酒小さじ1/2入れ10分煮込む</p>
+                    </li>
+                    <li>
+                        <span class="step-number">3</span>
+                        <p>長ネギ25g入れ、片栗粉小さじ1、水大さじ1を混ぜたものでとろみをつけ完成</p>
+                    </li>
+                </ol>
+            </section>
+        </div>
+    </article>
+
+</body>
+</html>
