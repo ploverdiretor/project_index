@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html> 
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>町中華のまかないカレー レシピ</title>
+    <style>
+        :root {
+            --primary-color: #d32f2f; /* 中華風の赤 */
+            --accent-color: #fbc02d;  /* カレーの黄 */
+            --text-color: #333333;
+            --bg-color: #f9f9f9;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .recipe-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-top: 8px solid var(--primary-color);
+        }
+
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .source {
+            font-size: 13px;
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            border-bottom: 1px dashed #ddd;
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            font-size: 18px;
+            color: var(--primary-color);
+            border-left: 4px solid var(--accent-color);
+            padding-left: 10px;
+            margin-bottom: 15px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        /* 材料リストのスタイル */
+        .ingredients-list {
+            list-style: none;
+        }
+
+        .ingredients-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 15px;
+        }
+
+        .ingredients-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* レシピ手順のスタイル */
+        .steps-list {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .steps-list li {
+            position: relative;
+            margin-bottom: 20px;
+            padding-left: 45px;
+            font-size: 15px;
+        }
+
+        .steps-list li::before {
+            counter-increment: step-counter;
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 2px;
+            background-color: var(--primary-color);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* スマホ対応の微調整 */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .recipe-container {
+                padding: 20px 15px;
+            }
+            h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="recipe-container">
+        <header>
+            <h1>町中華のまかないカレー</h1>
+            <div class="source">出典：武島たけしの極み飯</div>
+        </header>
+
+        <!-- 材料セクション -->
+        <section class="section">
+            <h2>材料</h2>
+            <ul class="ingredients-list">
+                <li><span>薄切り豚バラ肉</span><span>60g</span></li>
+                <li><span>玉ねぎ</span><span>1/4個</span></li>
+                <li><span>人参</span><span>1/4本</span></li>
+                <li><span>にんにく</span><span>1欠</span></li>
+                <li><span>生姜</span><span>1欠</span></li>
+                <li><span>水</span><span>目分量</span></li>
+                <li><span>鶏ガラスープの素</span><span>小さじ1</span></li>
+                <li><span>カレー粉</span><span>小さじ1半</span></li>
+                <li><span>砂糖</span><span>小さじ1</span></li>
+                <li><span>醤油</span><span>小さじ1</span></li>
+                <li><span>オイスターソース</span><span>小さじ1</span></li>
+                <li><span>片栗粉</span><span>適量</span></li>
+                <li><span>ごま油（炒め用）</span><span>大さじ1</span></li>
+                <li><span>豆板醤</span><span>少々</span></li>
+            </ul>
+        </section>
+
+        <!-- 作り方セクション -->
+        <section class="section">
+            <h2>作り方</h2>
+            <ol class="steps-list">
+                <li>にんじん、玉ねぎを薄切りにします。にんにくとしょうがはみじん切りにします。肉が大きかったら1口サイズに切っておきます。</li>
+                <li>フライパンに大さじ1ほどのごま油を引き、にんにく、生姜を軽く炒めて香りを引き出します。</li>
+                <li>火を強めて、豚バラ肉、野菜を炒めます。</li>
+                <li>豆板醤、カレー粉を加えて香りを引き出し、水、鶏ガラスープの素、砂糖、醤油、オイスターソースを加えます。</li>
+                <li>2分ほど煮込んだら、水溶き片栗粉でとろみを付けて完成です。</li>
+            </ol>
+        </section>
+    </div>
+
+</body>
+</html>

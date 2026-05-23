@@ -19,6 +19,8 @@
 		<div class="logo">
 			<a href="index.html" title="plover project" rel="home">plover project<span>web audio api / web MIDI api</span></a>
 		</div>
+		<div class="info">
+		</div>
 	</header>
 
 	<nav id="mainNav">
@@ -26,9 +28,9 @@
 			<a class="menu" id="menu"><span>MENU</span></a>
 			<div class="panel">
 				<ul>
-					<li class="current-menu-item"><a href="index.html"><strong>トップページ</strong><span>Top</span></a></li>
+					<li><a href="index.html"><strong>トップページ</strong><span>Top</span></a></li>
 					<li><a href="web_app01.html"><strong>ブラウザ・シンセサイザー</strong><span>Browser Synthesizer</span></a></li>
-					<li><a href="index.html"><strong>組み込みソフトウェア</strong><span>Embedded software</span></a>
+					<li class="current-menu-item"><a href="drone01.html"><strong>組み込みソフトウェア</strong><span>Embedded software</span></a>
 						<ul class="sub-menu">
 							<li><a href="remoteController01.html">共通リモコン</a></li>
 							<li><a href="drone01.html">ドローン</a></li>
@@ -45,43 +47,36 @@
 	</nav>
 
 	<div id="wrapper">
-		<div id="mainBanner">
-			<img src="images/banners/mainImg0.jpg" alt=""><div class="slogan"><h2>plover project</h2><p>web audio api / web MIDI api</p>
-		</div>
-	</div>
 
-	<section class="content">
-		<h3 class="heading">活動概要</h3>
-		<article class="post">
-			<p><img src="images/banners/drone1.png" alt="" width="260" height="113" class="alignright" />電子工作やwebアプリなどの制作活動のまとめ、料理や山歩きなども</p><p></p>
-		</article>
-	</section>
-	
-	<section class="gridWrapper">
-		<article class="grid">
-			<div class="box">
-				<img width="320" height="320" src="images/banners/display0.jpg" alt="" />
-				<h3>ブラウザ・シンセサイザー</h3>
-				<p>倍音加算、倍音減算、FM音源の方式</p>
-			</div>
-		</article>
-		<article class="grid">
-			<div class="box">
-				<img width="320" height="320" src="images/banners/drone2.png" alt="" />
-				<h3>電子工作</h3>
-				<p></p>
-				<p>Arduino,ESP32,Seeeduino</p>
-			</div>
-		</article>
-		<article class="grid">
-			<div class="box">
-				<img width="320" height="320" src="images/banners/view01.jpg" alt="" />
-				<h3>その他</h3>
-				<p></p>
-				<p>作成中</p>
-			</div>
-		</article>
-	</section>
+		<section id="main">
+			<section id="post-250" class="content">
+				<h3 class="heading">料理</h3>
+				<p>最近作ったもの</p>
+			</section>
+		</section>
+
+		<aside id="sidebar">
+			<section>
+				<h3 class="heading"><span>ヘッダー</span></h3>
+				<article>
+					<ul>
+						<li><a href="cooking/chinese_food.html">茄子とピーマンの味噌炒め</a></li>
+						<li><a href="cooking/curry.html">町中華のまかないカレー</a></li>
+					</ul>
+				</article>
+			</section>
+			<section>
+				<h3 class="heading"><span>リンク</span></h3>
+				<article>
+					<ul class="menu">
+						<li><a href="https://www.google.com/?hl=ja&#038;gws_rd=ssl">Google</a></li>
+						<li><a href="http://www.yahoo.co.jp/">Yahoo!JAPAN</a></li>
+						<li><a href="http://www.amazon.co.jp/">Amazon</a></li>
+						<li><a href="http://www.rakuten.co.jp/">楽天市場</a></li>
+					</ul>
+				</article>
+			</section>
+		</aside>
 
 	<footer id="footer">
 		<div class="inner">
@@ -90,8 +85,6 @@
 					<a href="index.html" title="" rel="home">plover project<span>web audio api / web MIDI api</span></a>
 				</div>
 				<div class="info">
-		<!--		<p class="tel"><span>電話:</span> 012-3456-7890</p>
-					<p class="open">受付時間: 平日 AM 10:00 〜 PM 5:00</p>-->	
 				</div>
 			</div>
 			<div class="menu">
@@ -102,7 +95,9 @@
 		</div>
 	</footer>
 
-	<p id="copyright">Copyright(c) 2016 ホームページサンプル株式会社 All Rights Reserved. Design by <a href="http://f-tpl.com" target="_blank" rel="nofollow">http://f-tpl.com</a></p><!-- ←クレジット表記を外す場合はシリアルキーが必要です http://f-tpl.com/credit/ -->
+		<p id="copyright">Copyright(c) 2016 ホームページサンプル株式会社 All Rights Reserved. Design by <a href="http://f-tpl.com" target="_blank" rel="nofollow">http://f-tpl.com</a></p><!-- ←クレジット表記を外す場合はシリアルキーが必要です http://f-tpl.com/credit/ -->
+
+	</div>
 
 </body>
 </html>
