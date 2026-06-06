@@ -55,21 +55,34 @@
 				<h3 class="heading">音声認識／音声合成</h3>
 				<p>ブラウザはGoogleChromeを推奨します。それ以外の動作確認はしていません。</p>
 				<article class="post">
-					<h3>1. 音声認識</h3>
-					<p>テスト</p>
+					<h3>Translator API作動要件</h3>
+						<p>ブラウザGoogle ChromeのAI翻訳APIは現在、Chromeデスクトップ版のみ対応しています。<br>
+						以下の条件を満たす必要があります
+						<ul>
+							<li>対応OS: Windows 10 / 11、macOS 13以上、Linux</li>
+							<li>GPU: VRAMが4GB超のもの</li>
+							<li>ストレージ: Chromeプロファイルが保存されているドライブに22GB以上の空き容量</li>
+							<li>ネットワーク: 無制限または非従量制回線（Wi-Fiや有線推奨）</li>
+							<li>ダウンロード後、空き容量が10GB未満になると、自動的にモデルが削除されます。<br>条件を再度満たすと再ダウンロードされます。</li>
+						</ul>
+						</p>
 					<br>
-					<h3>2. 音声合成</h3>
-					<p>テスト</p>
+					<h3>Translator API作動のための準備</h3>
+					<p>Google Chromeのアドレスバーに"chrome://flags/#translation-api"を入れて、アクセスします。<br>
+					・Enabled<br>
+					・Enabled without language pack limit<br>
+					のどちらかを選択します。</p>
 				</article>
 			</section>
 		</section>
 
 		<aside id="sidebar">
 			<section>
-				<h3 class="heading"><span>Recognition Synthesis</span></h3>
+				<h3 class="heading"><span>Recognition/Synthesis</span></h3>
 				<article>
 					<ul>
 						<li><a href="https://ploverdiretor.github.io/speech01/recog_synthe01.html">認識／合成</a></li>
+						<li><a href="https://ploverdiretor.github.io/speech01/recog_synthe02.html">日本語→英語</a></li>
 					</ul>
 				</article>
 			</section>
