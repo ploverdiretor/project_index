@@ -52,6 +52,16 @@
 			<section id="post-250" class="content">
 				<h3 class="heading">DFPlayer実験</h3>
 				<img width="50%" height="50%" src="ele/seeeduino/view.JPG" alt="">
+				<p>　</p>
+			</section>
+			<section id="post-250" class="content">
+				<h3 class="heading">SerialMonitor</h3>
+				<button id="connectBtn" onclick="onConnectButtonClick()">Connect</button> 115200 Only
+				<br />
+				<input type="text" id="sendInput" />
+				<input type="button" value="Send" onclick="sendSerial();" />
+				<br />
+				<textarea cols="80" rows="6" id="outputArea" readonly></textarea>
 			</section>
 		</section>
 
@@ -114,4 +124,63 @@
 	</div>
 
 </body>
+<script>
+	let port;
+	let connectFlg = 0
+	let reader;
+	async function onConnectButtonClick() {
+		if(connectFlg==0){
+			try {
+				port = await navigator.serial.requestPort();
+				await port.open({ baudRate: 115200 });
+				addSerial('Connect\n');
+				connectFlg = 1
+				document.getElementById('connectBtn').innerHTML = "disConnect"
+				while ((connectFlg==1)&&(port.readable)) {
+					reader = port.readable.getReader();
+					try {
+						while (true) {
+							const { value, done } = await reader.read();
+							if (done) {
+								addSerial("Canceled\n");
+								break;
+							}
+							const inputValue = new TextDecoder().decode(value);
+							addSerial(inputValue);
+						}
+					} catch (error) {
+						addSerial("Error: Read" + error + "\n");
+					} finally {
+						reader.releaseLock();
+					}
+				}
+			} catch (error) {
+				addSerial("Error: Open" + error + "\n");
+			}
+		}else{
+			addSerial('Disconnect\n');
+			document.getElementById('connectBtn').innerHTML = "Connect"
+			connectFlg = 0
+			reader.cancel();//突然引き抜かれたケースではエラーになる
+			reader.releaseLock();
+			await port.close();
+		}
+	}
+
+	function addSerial(msg) {
+		var textarea = document.getElementById('outputArea');
+		textarea.value += msg;
+		textarea.scrollTop = textarea.scrollHeight;
+	}
+
+	async function sendSerial() {
+		var text = document.getElementById('sendInput').value;
+		document.getElementById('sendInput').value = "";
+
+		const encoder = new TextEncoder();
+		const writer = port.writable.getWriter();
+		await writer.write(encoder.encode(text + "\n"));
+		writer.releaseLock();
+	}
+</script>
 </html>
