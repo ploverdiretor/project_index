@@ -51,12 +51,27 @@
 		<section id="main">
 			<section id="post-250" class="content">
 				<h3 class="heading">ドローン</h3>
+				<p>マイコンからFPGAを介してESC（電子速度制御器）を制御する形のドローンを作りました。ESCはPWMで制御しています。姿勢制御はPIDのカスケード制御を使用しています。リモコンとの通信はESP-NOWを使用しています。</p>
 				<table><tr>
 					<td align="left"><img width="100%" height="100%" src="images/drone/DSC03554a.JPG" alt=""></td>
 					<td align="left"><video src="ele/drone/drone01s.mp4" controls width="268px" ></video></td>
 				</tr></table>
 				
 				<article class="post">
+					<h3>ESC（電子速度制御器）</h3>
+					<p>ESC（電子速度制御器）は、モーターの回転速度を制御するためのデバイスです。PWM信号を受信して、モーターの回転速度を調整します。PWMシステムでは、パルスの長さは約1000μsから約2000μsまで変化します。このシステムでは20msごとにパルスが送信しています。マイコンはI2Cインターフェースを使用してFPGAにデータを送信し、FPGAは受信したデータからパルス幅を算出し、ESCに信号を送信します。</p>
+					<img width="50%" height="50%" src="ele/drone/esc_throttle_signal_pulses.png" alt="">
+					<br>
+					<h3>PID制御</h3>
+					<p>PID制御は、制御対象の状態を目標値に近づけるための制御手法です。PIDは、比例（Proportional）、積分（Integral）、微分（Derivative）の3つの要素から構成されます。PID制御では、現在の状態と目標値との差（偏差）を計算し、その偏差に基づいて制御信号を生成します。比例要素は偏差に比例した制御信号を生成し、積分要素は過去の偏差の累積を考慮して制御信号を調整し、微分要素は偏差の変化率に基づいて制御信号を補正します。これにより、システムの応答性や安定性を向上させることができます。</p>
+					<h3>カスケード制御</h3>
+					<p>ドローンのPID制御における「カスケード制御」は、内側の角速度（レート）ループと外側の角度（姿勢）ループを入れ子にする仕組みです。外側で目標姿勢と実測姿勢の差から「目標角速度」を計算し、内側でその目標角速度になるようモーター出力を調整することで、機体を安定させています。
+						<ul>
+							<li>外側ループ（角度・姿勢制御 / アウターループ）: <br>目標とする角度（ロール、ピッチ、ヨー）と、ジャイロセンサー等で検出された現在の角度の「誤差」を計算します。制御量: 角度のズレを解消するために必要な「目標角速度」を算出します。このシステムでは比例（P）制御を使用しています。</li>
+							<li>内側ループ（角速度・レート制御 / インナーループ）: <br>外側ループから渡された「目標角速度」と、現在の測定された実際の角速度の「誤差」を計算します。制御量: 誤差をゼロにするように、各モーターへの出力値（PWM信号など）を調整します。使用するゲイン: 比例（P）＋積分（I）＋微分（D）を全て使用しています。</li>
+						</ul>
+					<a href="https://interface.cqpub.co.jp/wp-content/uploads/IF03_054-069_A104-3.pdf" target="_blank" rel="noopener">参考文献：CQ出版のPID制御プログラム解説記事</a></p>
+
 					<h3>回路図</h3>
 					<a href="images/drone/drone_es2_250202.bmp" target="_blank" rel="noopener"><img width="50%" height="50%" src="images/drone/drone_es2_250202.bmp" alt=""></a><p>クリックすると別タブで開きます。</p>
 				</article>
