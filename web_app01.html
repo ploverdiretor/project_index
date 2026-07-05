@@ -55,19 +55,23 @@
 				<h3 class="heading">ブラウザ・シンセサイザー</h3>
 				<p>最近のブラウザは音関係のAPIも準備されて、気が付いたらシンセサイザーが作れてしまうほど充実していました。これで作るのが一番手軽かもしれませんね。代表的な音源方式（倍音加算、倍音減算、FM音源）で作ってみます。</p>
 				<p>ブラウザはGoogleChromeを推奨します。それ以外の動作確認はしていません。</p>
+				<p>（音源のみ）は"Play"ボタンを押すと発音します。それ以外はMIDIキーボードを接続して"Play"ボタンを押し、鍵盤を押すと発音します。</p>
 				<article class="post">
 					<h3>1. 倍音加算方式（Additive Synthesis）</h3>
 					<p>倍音加算方式は、音を複数の倍音を足し合わせて作る方式です。web audio api の Oscillator ノードで使用できる波形選択に “custom” というものがあり、これを使うと倍音加算方式の音源を作ることができます。これでドローバーオルガンをイメージして作ってみました。</p>
-					<img src="images/オルガン.png" alt="">
+					<p>"Harmonics"のパラメータを調整することで、異なる音色を作ることができます。スライダーの番号が倍音の番号に対応しています。調整すると音色が変化します。</p>
 					<br>
 					<h3>2. 倍音減算方式（Subtractive Synthesis）</h3>
 					<p>倍音減算方式は、最初に倍音を多く含む音を作り、フィルターで不要な倍音を削って音色を作る方式です。web audio api の、オシレーターには周波数の指定や波形の指定などのパラメータがありますので、これらを設定できるようにしてみます。また汎用的なフィルタとして「BiquadFilter」、日本語では「双2次フィルター」という形式のものが用意されています。これらを利用してアナログ・シンセサイザーをイメージして作ってみました。</p>
-					<img src="images/moog.png" alt="">
+					<p>オシレーターのTypeを選択します。Typeは、正弦波、矩形波、のこぎり波などがあり、その波形に含まれた高周波をフィルターで減衰させることで音色を変化させます。</p>
 					<br>
 					<h3>3. FM音源方式（Frequency Modulation Synthesis）</h3>
-					<p>周波数変調（frequency modulation, FM）を応用する音色合成方式を用いた音源。</p>
-					<p>元の波形を別の波形で揺らして（変調して）別の形の波形にして出力するという音源です。波形生成のパラメーターを変化させることにより倍音成分が大きく変化し、音色を劇的に変化させることが可能です。しかし、その挙動はカオスであるため、パラメータの変動による倍音変化は予測するのが難しいです。</p>
-					<img src="images/DX-7.png" alt="">
+					<p>周波数変調（frequency modulation, FM）を応用する音色合成方式を用いた音源です。元の波形を別の波形で揺らして（変調して）別の形の波形にして出力するという音源です。波形生成のパラメーターを変化させることにより倍音成分が大きく変化し、音色を劇的に変化させることが可能です。しかし、その挙動はカオスであるため、パラメータの変動による倍音変化は予測するのが難しいです。</p>
+					<p>OP1とOP4がキャリアです。OP2とOP3はOP1のモジュレーターでOP1の周波数を変調します。OP5とOP6はOP4のモジュレーターでOP4の周波数を変調します。"Feedback"はOP6の出力のフィードバックを調整するパラメータです。</p>
+					<br>
+					<h3>4. PCM音源方式（Pulse Code Modulation Synthesis）</h3>
+					<p>楽器などの波形をサンプリング（標本化）し、その波形の呼び出し速度を変えて音程を変更する方式です。現在発売されている電子ピアノ、デジタルシンセサイザー、電子キーボードの大部分がこのサンプリング方式を採用しています。</p>
+					<p>ページが表示されると、波形データの読み込みを始めます。波形データは鍵盤の個数分（88鍵）読み込むので、少し時間がかかります。読み込みが完了すると、"Play"ボタンが押せるようになるので、押下すると演奏できる状態になります。接続されたMIDIキーボードの鍵盤を押すと、対応する音が鳴ります。</p>
 				</article>
 			</section>
 		</section>
@@ -105,25 +109,24 @@
 				</article>
 			</section>
 		</aside>
-
-	<footer id="footer">
-		<div class="inner">
-			<div id="info" class="grid">
-				<div class="logo">
-					<a href="index.html" title="" rel="home">plover project<span>web audio api / web MIDI api</span></a>
+		<footer id="footer">
+			<div class="inner">
+				<div id="info" class="grid">
+					<div class="logo">
+						<a href="index.html" title="" rel="home">plover project<span>web audio api / web MIDI api</span></a>
+					</div>
+					<div class="info">
+			<!--		<p class="tel"><span>電話:</span> 012-3456-7890</p>
+						<p class="open">受付時間: 平日 AM 10:00 〜 PM 5:00</p>-->	
+					</div>
 				</div>
-				<div class="info">
-		<!--		<p class="tel"><span>電話:</span> 012-3456-7890</p>
-					<p class="open">受付時間: 平日 AM 10:00 〜 PM 5:00</p>-->	
+				<div class="menu">
+					<ul class="footnav">
+						<li><a href="index.html">活動概要</a></li>
+					</ul>
 				</div>
 			</div>
-			<div class="menu">
-				<ul class="footnav">
-					<li><a href="index.html">活動概要</a></li>
-				</ul>
-			</div>
-		</div>
-	</footer>
+		</footer>
 
 		<p id="copyright">Copyright(c) 2016 ホームページサンプル株式会社 All Rights Reserved. Design by <a href="http://f-tpl.com" target="_blank" rel="nofollow">http://f-tpl.com</a></p><!-- ←クレジット表記を外す場合はシリアルキーが必要です http://f-tpl.com/credit/ -->
 
