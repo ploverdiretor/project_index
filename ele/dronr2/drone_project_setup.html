@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ESP32-C6 4インチ自作ドローン 製作計画書</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
+        h1 { color: #007bff; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
+        h2 { color: #495057; background: #e9ecef; padding: 8px 15px; border-left: 5px solid #007bff; border-radius: 4px; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f1f3f5; }
+        .btn-link { display: inline-block; padding: 6px 12px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 0.9em; }
+        .btn-link:hover { background-color: #218838; }
+        .warning-box { background-color: #fff3cd; border-left: 5px solid #ffc107; color: #856404; padding: 15px; margin-top: 20px; border-radius: 4px; }
+        .safe-tag { background: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold; }
+        .spec-tag { background: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>ESP32-C6 4インチ自作ドローン 製作計画書</h1>
+    <p>ADピンや起動干渉ピンを徹底的に排除した安全なピン配置と、国内・海外ショップを組み合わせた最適コストのパーツリストです。</p>
+
+    <h2>1. 📌 ESP32-C6 (Seeed Studio XIAO) ピン割り当て計画</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>XIAOピン</th>
+                <th>GPIO番号</th>
+                <th>接続先・用途</th>
+                <th>信号タイプ</th>
+                <th>安全性・備考</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>D0</strong></td>
+                <td>GPIO2</td>
+                <td>(予備・フリー)</td>
+                <td>ADC1_CH2</td>
+                <td>AD変換ピン。将来のバッテリー電圧監視用などに温存。</td>
+            </tr>
+            <tr>
+                <td><strong>D1</strong></td>
+                <td>GPIO3</td>
+                <td>(予備・フリー)</td>
+                <td>ADC1_CH3</td>
+                <td>AD変換ピン。安全のためモーター信号からは除外。</td>
+            </tr>
+            <tr>
+                <td><strong>D2</strong></td>
+                <td>GPIO16</td>
+                <td><strong>モーター1 (M1) 信号線</strong></td>
+                <td>Digital OUT (RMT)</td>
+                <td><span class="safe-tag">安全</span> ストラップ・ADに無関係な純粋デジタルピン。</td>
+            </tr>
+            <tr>
+                <td><strong>D3</strong></td>
+                <td>GPIO17</td>
+                <td><strong>モーター2 (M2) 信号線</strong></td>
+                <td>Digital OUT (RMT)</td>
+                <td><span class="safe-tag">安全</span> 純粋デジタルピン。</td>
+            </tr>
+            <tr>
+                <td><strong>D4</strong></td>
+                <td>GPIO19</td>
+                <td><strong>モーター3 (M3) 信号線</strong></td>
+                <td>Digital OUT (RMT)</td>
+                <td><span class="safe-tag">安全</span> 純粋デジタルピン。</td>
+            </tr>
+            <tr>
+                <td><strong>D5</strong></td>
+                <td>GPIO20</td>
+                <td><strong>BNO055 (SDA)</strong></td>
+                <td>I2C Data</td>
+                <td>XIAOハードウェア標準I2Cピン。センサーと接続。</td>
+            </tr>
+            <tr>
+                <td><strong>D6</strong></td>
+                <td>GPIO21</td>
+                <td><strong>BNO055 (SCL)</strong></td>
+                <td>I2C Clock</td>
+                <td>XIAOハードウェア標準I2Cピン。</td>
+            </tr>
+            <tr>
+                <td><strong>D7</strong></td>
+                <td>GPIO14</td>
+                <td><strong>モーター4 (M4) 信号線</strong></td>
+                <td>Digital OUT (RMT)</td>
+                <td><span class="safe-tag">安全</span> 純粋デジタルピン。</td>
+            </tr>
+            <tr>
+                <td><strong>D8</strong></td>
+                <td>GPIO15</td>
+                <td><strong>ステータス表示用LED</strong></td>
+                <td>Digital OUT</td>
+                <td>動作確認・エラーインジケータ表示用。</td>
+            </tr>
+            <tr>
+                <td><strong>D9</strong></td>
+                <td>GPIO22</td>
+                <td><strong>テスト用可変抵抗</strong></td>
+                <td>ADC1_CH4</td>
+                <td><span class="spec-tag">AD専用</span> テストスロットル入力用ボリュームを接続。</td>
+            </tr>
+            <tr>
+                <td><strong>D10</strong></td>
+                <td>GPIO23</td>
+                <td>(予備・フリー)</td>
+                <td>GPIO / Strap</td>
+                <td>起動モード干渉（ストラップ）を避けるため予備へ隔離。</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. 🛠️ 主要部品リスト & 購入先リンク</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>カテゴリ</th>
+                <th>パーツ名 / スペック</th>
+                <th>数量</th>
+                <th>購入先リンク</th>
+                <th>選定ポイント</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>マイコン (FC)</strong></td>
+                <td>Seeed Studio XIAO ESP32C6</td>
+                <td>1</td>
+                <td><a class="btn-link" href="https://amazon.co.jp" target="_blank">Amazonで購入</a></td>
+                <td>内蔵RMTモジュールを利用し、自作コードから正確なDShot600を出力。</td>
+            </tr>
+            <tr>
+                <td><strong>姿勢センサー</strong></td>
+                <td>BNO055使用 9軸センサーモジュール</td>
+                <td>1</td>
+                <td><a class="btn-link" href="https://akizukidenshi.com" target="_blank">秋月電子で購入</a></td>
+                <td>モジュール側でオイラー角を自動計算。ESP32の姿勢演算計算を丸ごと省略可能。</td>
+            </tr>
+            <tr>
+                <td><strong>ESC</strong></td>
+                <td>HAKRC 25A 2-4S 4in1 ESC (BLHeli_S)</td>
+                <td>1</td>
+                <td><a class="btn-link" href="https://aliexpress.com" target="_blank">AliExpressで購入</a></td>
+                <td>20x20mmマウント。DShot600にネイティブ対応した高コスパESC。</td>
+            </tr>
+            <tr>
+                <td><strong>モーター</strong></td>
+                <td>Flywoo NIN V2 1404 (1.5mm軸)</td>
+                <td>4</td>
+                <td><a class="btn-link" href="https://flywoo.net" target="_blank">Flywoo公式で購入</a></td>
+                <td>4Sなら2750KV/3000KV、3Sなら3750KVを推奨。Tマウント仕様。</td>
+            </tr>
+            <tr>
+                <td><strong>プロペラ</strong></td>
+                <td>HQProp T4x2x3 (1.5mm軸 / 3穴)</td>
+                <td>1組</td>
+                <td><a class="btn-link" href="https://fc2.com" target="_blank">グライドパスで購入</a></td>
+                <td>1404モーターとフレームに完全適合する国内格安大定番4インチペラ。</td>
+            </tr>
+            <tr>
+                <td><strong>フレーム</strong></td>
+                <td>4インチ マイクロ/ツースピックフレーム</td>
+                <td>1</td>
+                <td><a class="btn-link" href="https://aliexpress.com" target="_blank">AliExpressで購入</a></td>
+                <td>20x20mmのスタックが搭載できる超軽量カーボン製フレーム。</td>
+            </tr>
+            <tr>
+                <td><strong>電源変換</strong></td>
+                <td>微小DCDCコンバータ (5V / 2A以上)</td>
+                <td>1</td>
+                <td><a class="btn-link" href="https://akizukidenshi.com" target="_blank">秋月電子で購入</a></td>
+                <td>バッテリー電圧をXIAOとBNO055駆動用の安定した5Vへ降圧。</td>
+            </tr>
+            <tr>
+                <td><strong>ノイズ対策</strong></td>
+                <td>低ESR電解コンデンサ (35V 470μF)</td>
+                <td>1</td>
+                <td><a class="btn-link" href="https://akizukidenshi.com" target="_blank">秋月電子で購入</a></td>
+                <td>ESCの電源入力部に必須。モーターの逆起電力ノイズによるマイコン暴走を防ぐ。</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>3. ⚠️ 安全および実装時のアドバイス</h2>
+    <div class="warning-box">
+        <ul>
+            <li><strong>信号用GNDの接続:</strong> ESCとXIAOを接続する際、M1〜M4の4本の信号線だけでなく、ESCの信号用GNDとXIAOのGNDピンも必ず最短距離で太めに結線してください。これを怠ると、DShot600の高速シリアル信号がモーターノイズで化けて暴走します。</li>
+            <li><strong>可変抵抗の電圧:</strong> 可変抵抗の端には、絶対にバッテリーの電圧(11.1V〜)を直接入れないでください。必ずXIAOの「3V3ピン」と「GNDピン」から電源を引っ張ってください。</li>
+            <li><strong>プロペラは絶対に外す:</strong> 自作プログラムの初期テスト（特にDShotのパルス生成テストや可変抵抗の連動テスト）を行う間は、機体が予期せず最大回転するリスクが非常に高いです。プロペラは【必ず外した状態】で開発・実験を行ってください。</li>
+        </ul>
+    </div>
+
+</body>
+</html>
