@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DShot600 プロトコル詳細解説（設計者向け）</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        h1, h2, h3 {
+            color: #1a252f;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 5px;
+        }
+        h1 { border-bottom-width: 3px; }
+        h3 { border-bottom: none; color: #2c3e50; }
+        code {
+            background-color: #eaecef;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: #2d3748;
+            color: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: "Courier New", Courier, monospace;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+        }
+        th, td {
+            border: 1px solid #cbd5e0;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #edf2f7;
+            color: #2d3748;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DShot600 プロトコル詳細解説（設計者向け）</h1>
+        <p>DShotは、フライトコントローラー（FC）とESC（Electronic Speed Controller）間で用いられる、単方向（基本形）の非同期シリアル・ソースシンク型デジタル通信プロトコルです。</p>
+
+        <h2>1. 物理層と信号符号化（Encoding）</h2>
+        <p>DShotは、一般的なUARTのようなスタート/ストップビット形式ではなく、1波形（1ビット）のパルス幅（デューティ比）で「0」と「1」を表現する<strong>PWMパルス幅符号化（TDR: Time-Domain Representation）</strong>を採用しています。これにより、クロック同期線を省きながらも高い同期性を維持しています。</p>
+        
+        <h3>タイムスロット（1ビットの構造）</h3>
+        <p>1ビットの送信時間を T としたとき、信号の立ち上がり（Rising Edge）から次の立ち上がりまでを1周期とします。</p>
+        <ul>
+            <li><strong>ビット「0」:</strong> 周期の 37.5% の期間 <code>HIGH</code> を維持し、残りの 62.5% は <code>LOW</code>。</li>
+            <li><strong>ビット「1」:</strong> 周期の 75.0% の期間 <code>HIGH</code> を維持し、残りの 25.0% は <code>LOW</code>。</li>
+        </ul>
+<pre>
+ビット「0」:
+|--37.5%--|-------62.5%-------|
+[=========]___________________| (計 1.0T)
+
+ビット「1」:
+|-------75.0%-------|---25.0%-|
+[===================]_________| (計 1.0T)
+</pre>
+
+        <h3>DShot600の具体的なタイミング規定</h3>
+        <p>DShot600のビットレートは 600 kbps です。したがって、1ビットあたりの総時間 T は 1 / 600,000 ≈ 1.67 μs となります。</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>パラメータ</th>
+                    <th>規定値（理論値）</th>
+                    <th>許容誤差範囲</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1ビット総時間 (T)</strong></td>
+                    <td>1,667 ns</td>
+                    <td>±10% 程度（ESCの内部RC発振に依存）</td>
+                </tr>
+                <tr>
+                    <td><strong>「0」のHIGH時間 (T₀_H)</strong></td>
+                    <td>625 ns</td>
+                    <td>T &times; 0.375</td>
+                </tr>
+                <tr>
+                    <td><strong>「1」のHIGH時間 (T₁_H)</strong></td>
+                    <td>1,250 ns</td>
+                    <td>T &times; 0.750</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>2. フレーム構造（Frame Structure）</h2>
+        <p>1回の通信（1フレーム）は計 16ビットの固定長データパケットで構成されます。MSB（最上位ビット）から順に送信されます。</p>
+<pre>
+MSB                                                      LSB
++-----------------------------------+----------+-----------+
+|      Throttle Value (11-bit)      | Telemetry| CRC (4-bit) |
+|           [15 : 5]                |   (1b)   |  [3 : 0]  |
++-----------------------------------+----------+-----------+
+</pre>
+        <ul>
+            <li><strong>① Throttle Value（11ビット: ビット15〜5）：</strong> モーターの出力命令またはコマンドを指定します。レンジ値は <code>0</code> 〜 <code>2047</code> です。
+                <ul>
+                    <li><code>0</code>: ディスアーム（モーター停止・初期状態）</li>
+                    <li><code>1</code> 〜 <code>47</code>: コマンドモード（ESCのBuzzer鳴動、回転方向反転など）</li>
+                    <li><code>48</code> 〜 <code>2047</code>: スロットル出力値（48 がモーター回転の最小値、2047 が最大出力）</li>
+                </ul>
+            </li>
+            <li><strong>② Telemetry（1ビット: ビット4）：</strong> ESCに対して、テレメトリデータの返送を要求するフラグです。<code>1</code> の場合、ESCは指定された方法でFCへステータス（回転数、温度など）を返送します。</li>
+            <li><strong>③ CRC（4ビット: ビット3〜0）：</strong> ニブル単位（4ビット）のチェックサムです。データの整合性を検証します。計算対象は上位12ビットです。</li>
+        </ul>
+
+        <h3>CRC計算アルゴリズム（C言語表現）</h3>
+<pre>
+uint8_t packet_telemetry = (throttle &lt;&lt; 1) | telemetry; // 12bitデータ
+uint8_t crc = (packet_telemetry ^ (packet_telemetry &gt;&gt; 4) ^ (packet_telemetry &gt;&gt; 8)) &amp; 0x0F;
+</pre>
+
+        <h2>3. タイミング特性とインターフェース要件</h2>
+        <p>1フレーム（16ビット）の送信にかかる純粋な時間は <code>16 &times; 1.667 μs = 26.67 μs</code> です。</p>
+        <p>ESCのデコーダが「フレームの終わり」を認識し、受信データをラッチしてパルス計測カウンタをリセットするために、フレーム間には必ず<strong>最小 30 μs 以上</strong>（推奨 40 μs 以上）の <code>LOW</code> 状態（リセットタイム）を確保する必要があります。</p>
+        <p>このため、DShot600における実質的な最短最大フレームレート（理論上限値）は、約 <code>1 / (26.67 μs + 30 μs) ≈ 17.6 kHz</code> となり、<strong>8kHzや4kHzのPIDループに完全に同期（同期駆動）可能</strong>な設計になっています。</p>
+
+        <h2>4. マイコン側（MCU）の実装戦略</h2>
+        <p>FC側（STM32など）で正確なパルス幅をCPUの介在なしに生成するため、通常は <strong>DMA（Direct Memory Access）付きのタイマー（TIM）</strong> が使用されます。</p>
+        <ol>
+            <li><strong>DMAバッファの構築:</strong> 16ビットの各ビット値（0または1）に対応するタイマーの比較一致レジスタ（CCR）の値を、16要素の配列（<code>uint32_t</code> または <code>uint16_t</code>）としてメモリ上に用意します。</li>
+            <li><strong>タイマー設定:</strong> PWMモードに設定し、タイマー周期（ARR）をDShot600の1ビット期間（1.667µs、例えば 168MHz駆動なら ARR=280）に固定します。</li>
+            <li><strong>DMA転送トリガー:</strong> PIDループのパケット送信タイミングで、タイマーのアップデートイベント（UDE）または比較一致イベントをトリガーに、DMAでCCRレジスタへバッファからデータを次々に自動転送（バースト転送）させます。</li>
+        </ol>
+
+        <h2>5. 双方向DShot（Bidirectional DShot）の拡張</h2>
+        <p>現代のファームウェア（Betaflight / Bluejay 等）で必須となる双方向DShotでは、物理層の結線（1線のみ）をそのままに、ハーフデュプレックス（半二重）通信を行います。</p>
+        <ol>
+            <li><strong>FCからESCへの送信:</strong> FCが通常通り16ビットのDShotフレームを送信（約26.7µs）。</li>
+            <li><strong>バスの反転:</strong> FCはピンを出力（Output）からプルアップ付き入力（Input Filtered）へ切り替えます。</li>
+            <li><strong>ESCからFCへの返送:</strong> 命令を受け取ったESCは、即座に自身のタイマーを用いて、モーターの最新のエルゴ（eRPM: 電気的回転数）データを12ビットのパケット（+4ビットCRC）にエンコードし、同じ信号線を使ってFCへ逆方向にバースト送信します。</li>
+            <li><strong>FCでの受信:</strong> FCのタイマーのインプットキャプチャ（IC）機能とDMAを組み合わせ、パルス幅を計測してeRPMを復調します。これをベースに<strong>RPMノッチフィルター</strong>を駆動させます。</li>
+        </ol>
+        <p>※設計上の注意点として、DShot600は高速なため、基板の浮遊容量やインダクタンスによる信号波形のなまりを防ぐ目的で、FC-ESC間の信号線には通常 10Ω〜100Ω 程度のダンピング抵抗を直列に挿入し、インピーダンス整合と反射ノイズの抑制を行うのが一般的です。</p>
+    </div>
+</body>
+</html>

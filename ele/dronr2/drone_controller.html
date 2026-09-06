@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドローンプロポ制御解説</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #1e3a8a;
+            border-bottom: 3px solid #1e3a8a;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2563eb;
+            margin-top: 30px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 5px;
+        }
+        h3 {
+            color: #1d4ed8;
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #eff6ff;
+            color: #1e40af;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .flowchart {
+            background-color: #f1f5f9;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: monospace;
+            white-space: pre-line;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .math {
+            background-color: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 10px 15px;
+            border-radius: 6px;
+            display: inline-block;
+            font-style: italic;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>プロポ側の処理とデータ算出メカニズム</h1>
+
+    <h2>1. プロポ内部での処理の流れ</h2>
+    <p>プロポの内部では、スティックの動きが以下の4つのステップで処理され、ドローン（ESP32-C6）へ電波で送信されます。</p>
+    
+    <div class="flowchart">
+[スティックの物理的傾き] 
+       ↓ 
+① ADC（電圧の読み取り）
+       ↓ 
+② キャリブレーション（0 ～ 100%への正規化）
+       ↓ 
+③ EXPO / デッドバンド処理（操縦性の味付け）
+       ↓ 
+④ パケット化（SBUS、CRSF、PWMなどの通信データへ変換）
+    </div>
+
+    <h2>2. 操作子データからプロポ入力への変換ステップ</h2>
+    <p>具体的にマイコン（プロポ側）でどのような計算が行われているか、ステップ順に解説します。</p>
+
+    <h3>① ADCによるデジタル値化</h3>
+    <p>スティックの根元には「ポテンショメータ（可変抵抗）」や「ホールエフェクトセンサー（磁気センサー）」がついており、スティックの傾きに応じて電圧が変わります。プロポ内のマイコンがこれをADC（アナログ・デジタル変換）で読み取ります。</p>
+    <ul>
+        <li><strong>例：</strong>12bit ADCの場合、値は <code>0 ～ 4095</code>（センターは <code>2048</code> 付近）になります。</li>
+    </ul>
+
+    <h3>② キャリブレーションと正規化</h3>
+    <p>センサーの個体差やズレを補正し、扱いやすいように <strong><code>-1.0 ～ +1.0</code>（または 0 ～ 100%）の範囲に正規化</strong> します。</p>
+    <ul>
+        <li><strong>スティック最左 (最小値):</strong> <code>In_min = 200</code></li>
+        <li><strong>スティック中央 (中立値):</strong> <code>In_center = 2020</code></li>
+        <li><strong>スティック最右 (最大値):</strong> <code>In_max = 3900</code></li>
+    </ul>
+    <p>この実測値をもとに、現在値（<code>raw_adc</code>）を <code>-1.0 ～ 1.0</code> の変数 <code>stick_input</code> にマッピングします。</p>
+
+<pre><code>// センターより左（下）にある場合
+if (raw_adc &lt; In_center) {
+    stick_input = (float)(raw_adc - In_center) / (In_center - In_min);
+} 
+// センターより右（上）にある場合
+else {
+    stick_input = (float)(raw_adc - In_center) / (In_max - In_center);
+}
+stick_input = constrain(stick_input, -1.0, 1.0); // 念のため限界値をクリップ</code></pre>
+
+    <h3>③ デッドバンド（遊び）と EXPO（エキスポ）処理</h3>
+    <p>正規化した <code>stick_input</code> をそのままドローンに送ると、スティックのわずかな震えでドローンがブレたり、中心付近の操作が敏感すぎてホバリングが難しくなったりします。そのため、以下の2つの処理（味付け）を行います。</p>
+    <ul>
+        <li><strong>デッドバンド（Deadband）：</strong> スティックの中心付近（例：±3%）を強制的に <code>0</code> にする「遊び」を設けます。これにより、指を離したときの微妙なズレを無視できます。</li>
+        <li><strong>EXPO（Exponential：指数カーブ）：</strong> 直線のグラフではなく、<strong>3次曲線（カーブ）</strong>に変形させます。これを行うことで、<strong>「スティック中心付近では動きがマイルド（ホバリングしやすい）」</strong>になり、<strong>「大きく倒したときだけ急激に大きく動く（アクロバット飛行ができる）」</strong>という理想的な操縦性になります。</li>
+    </ul>
+
+    <h4>【数式によるEXPOの計算例】</h4>
+    <p>EXPOの度合いを <code>0.0（直線）～ 1.0（強いカーブ）</code> の間で調整できるようにする一般的な数式です。</p>
+<pre><code>float expo = 0.4; // EXPOの強さ（40%）
+// 3次関数を使ってカーブを作る
+float stick_expo = (1.0 - expo) * stick_input + expo * (stick_input * stick_input * stick_input);</code></pre>
+
+    <h3>④ 最終的な目標値への変換（スケーリング）</h3>
+    <p>最後に、この <code>-1.0 ～ 1.0</code> に変形された値を、ドローンが理解できる<strong>「目標角度」</strong>や<strong>「目標角速度」</strong>に変換します。</p>
+    <ul>
+        <li><strong>アングルモード（自動水平：初心者向け）の場合：</strong> スティック最大傾きを「最大45度（ラジアン換算：約0.785）」に設定したい場合：<br>
+            <div class="math">目標角度 (cmd_angle) = stick_expo × 45.0 × (π / 180.0)</div>
+        </li>
+        <li><strong>アクロモード（手動制御：上級者・レース向け）の場合：</strong> スティック最大傾きを「秒間700度（700 deg/s）の回転」に設定したい場合：<br>
+            <div class="math">目標角速度 (target_rate) = stick_expo × 700.0</div>
+        </li>
+    </ul>
+
+    <h2>3. ドローン（受信側）はどうやって受け取る？</h2>
+    <p>プロポ側で計算されたこれらのデータは、最終的に通信プロトコル（CRSFやSBUS、またはESP-NOWなど）に乗せるために、一般的には <strong><code>1000 ～ 2000</code></strong> （センターが <code>1500</code>）というマイクロ秒（μs）単位のデジタル数値（チャンネルデータ）に変換されて電波で飛びます。</p>
+    <p>ドローン側（ESP32-C6）の受信機は、この <code>1000?2000</code> という数値を読み取り、それを再び逆算して「あ、今プロポは右に15度傾けろと言っているな」と判断して、クォータニオン制御コードの <code>cmd_roll</code> などに代入します。</p>
+
+</body>
+</html>
