@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DShot600 プロトコル仕様書 (設計者向け)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        h1 {
+            color: #0f2c59;
+            border-bottom: 3px solid #0f2c59;
+            padding-bottom: 10px;
+            font-size: 28px;
+        }
+        h2 {
+            color: #1e5128;
+            border-left: 5px solid #1e5128;
+            padding-left: 10px;
+            margin-top: 30px;
+            font-size: 22px;
+        }
+        h3 {
+            color: #4f709c;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+        code {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #d63384;
+        }
+        pre {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        pre code {
+            color: inherit;
+            background-color: transparent;
+            padding: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #0f2c59;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .note {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .flex-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .flex-child {
+            flex: 1;
+            min-width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>DShot600 プロトコル仕様書</h1>
+    <p>本ドキュメントは、フライトコントローラー（FC）およびESC（Electronic Speed Controller）におけるDShot600プロトコルのファームウェア実装およびハードウェア設計のためのテクニカルリファレンスです。</p>
+
+    <h2>1. 物理層と信号符号化（Encoding）</h2>
+    <p>DShotは、1ビットのパルス幅（デューティ比）によって「0」と「1」を表現する<strong>PWMパルス幅符号化（TDR: Time-Domain Representation）</strong>を採用しています。ビットレートは <strong>600 kbps</strong> です。</p>
+    
+    <h3>■ タイムスロット構造 (T = 1.667 µs)</h3>
+    <ul>
+        <li><strong>ビット「0」:</strong> 周期の 37.5% の期間 <code>HIGH</code>、残り 62.5% は <code>LOW</code></li>
+        <li><strong>ビット「1」:</strong> 周期の 75.0% の期間 <code>HIGH</code>、残り 25.0% は <code>LOW</code></li>
+    </ul>
+
+    <pre><code>ビット「0」の波形:
+|-- 625ns --|----------- 1042ns -----------|
+[===========]______________________________| (計 1,667ns)
+
+ビット「1」の波形:
+|----------- 1250ns -----------|-- 417ns --|
+[==============================]___________| (計 1,667ns)</code></pre>
+
+    <h3>■ タイミング規定表</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>パラメータ</th>
+                <th>理論値（DShot600）</th>
+                <th>計算式</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>1ビット総時間 (T)</strong></td>
+                <td>1,667 ns</td>
+                <td>1 / 600,000 秒</td>
+            </tr>
+            <tr>
+                <td><strong>「0」のHIGH時間 (T₀H)</strong></td>
+                <td>625 ns</td>
+                <td>T &times; 0.375</td>
+            </tr>
+            <tr>
+                <td><strong>「1」のHIGH時間 (T₁H)</strong></td>
+                <td>1,250 ns</td>
+                <td>T &times; 0.750</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. フレーム構造（Frame Structure）</h2>
+    <p>1フレームは <strong>16ビットの固定長</strong> で構成され、MSB（最上位ビット）から順に送信されます。</p>
+
+    <pre><code>MSB                                                        LSB
++-------------------------------------+-----------+----------+
+|       Throttle Value (11-bit)       | Telemetry |   CRC    |
+|              [15 : 5]               |   (1-bit) | (4-bit)  |
++-------------------------------------+-----------+----------+</code></pre>
+
+    <ul>
+        <li><strong>Throttle Value (11bit / Bit 15-5):</strong> <code>0～2047</code> の値。
+            <ul>
+                <li><code>0</code>: ディスアーム（停止状態）</li>
+                <li><code>1～47</code>: コマンドモード（ビーコン鳴動、回転方向反転など）</li>
+                <li><code>48～2047</code>: スロットル出力（48が最小、2047が最大出力）</li>
+            </ul>
+        </li>
+        <li><strong>Telemetry (1bit / Bit 4):</strong> <code>1</code> の場合、ESCに対してテレメトリデータの返送を要求。</li>
+        <li><strong>CRC (4bit / Bit 3-0):</strong> 上位12ビット（Throttle + Telemetry）を4ビットずつに3分割したXORチェックサム。</li>
+    </ul>
+
+    <h3>■ CRC計算アルゴリズム (C言語実装例)</h3>
+    <pre><code>/**
+ * @brief DShotの16bitフレームを構築し、CRCを計算・付与する
+ * @param throttle 11ビットのスロットル値 (0 - 2047)
+ * @param telemetry 1ビットのテレメトリ要求フラグ (0または1)
+ * @return 構築された16ビットのDShotパケット
+ */
+uint16_t prepare_dshot_packet(uint16_t throttle, uint8_t telemetry) {
+    // 上位12ビットのデータを作成
+    uint16_t packet = (throttle & 0x07FF) << 1;
+    packet |= (telemetry & 0x01);
+
+    // 4ビットずつのXORによるCRC計算
+    uint8_t crc = (packet ^ (packet >> 4) ^ (packet >> 8)) & 0x0F;
+
+    // パケットを4ビット左シフトし、下位にCRCを結合
+    return (packet << 4) | crc;
+}</code></pre>
+
+    <h2>3. マイコン（MCU）実装戦略とDMA制御</h2>
+    <p>CPUの負荷を最小化するため、一般的には<strong>DMA（Direct Memory Access）付きのタイマー（TIM）</strong>を使用して波形を自動生成します。</p>
+
+    <div class="flex-container">
+        <div class="flex-child">
+            <h3>■ 送信バッファの仕組み</h3>
+            <p>1フレーム（16ビット）を送信するために、タイマーの比較一致レジスタ（CCR）に流し込む <strong>16要素の配列</strong> をメモリ上に展開します。各要素には、ビットが0か1かに応じたCCRの設定値を格納します。</p>
+        </div>
+        <div class="flex-child">
+            <h3>■ インターフレームギャップ</h3>
+            <p>ESC側がフレームの終端を検出し、カウンタをリセットするために、フレーム間には必ず <strong>最小30 µs以上</strong> の <code>LOW</code> 期間（リセットタイム）を設ける必要があります。</p>
+        </div>
+    </div>
+
+    <h3>■ STM32（HALレイヤ）を想定した送信擬似コード</h3>
+    <pre><code>// 16ビットデータ + リセット期間用のダミー要素
+uint32_t dshot_dma_buffer[16 + 1]; 
+
+void update_dshot_buffer(uint16_t packet) {
+    for (int i = 0; i < 16; i++) {
+        // MSBから評価
+        if (packet & (1 << (15 - i))) {
+            dshot_dma_buffer[i] = TIM_CCR_VAL_BIT_1; // 75% デューティ値
+        } else {
+            dshot_dma_buffer[i] = TIM_CCR_VAL_BIT_0; // 37.5% デューティ値
+        }
+    }
+    dshot_dma_buffer[16] = 0; // リセットタイム用 (LOW固定)
+}
+
+void send_dshot_frame(void) {
+    // タイマーのDMA転送を開始
+    HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, dshot_dma_buffer, 17);
+}</code></pre>
+
+    <h2>4. 双方向DShot（Bidirectional DShot）への拡張</h2>
+    <p>双方向DShotでは、同一の1線を用いて半二重（ハーフデュプレックス）通信を行います。FCがフレームを送信し終えた直後、信号線の方向を反転させてESCからのERPM（電気的回転数）データを受信します。</p>
+
+    <pre><code>【双方向DShotのタイムラインシーケンス】
+|<- FC送信: DShotフレーム (16bit) ->| ターンアラウンド |<- ESC返送: ERPMデータ (16bit) ->| リセット |
+|------------- 26.67 µs -------------|~~~ 2～5 µs ~~~|------------- 26.67 µs ------------|--- >30µs --|</code></pre>
+    
+    <p>ESCから返送されるERPMデータも同様に16ビット（12ビットの回転数データ + 4ビットのCRC）のPWM符号化で返されるため、FC側はタイマーの<strong>インプットキャプチャ機能（両エッジ検出）とDMA</strong>を組み合わせ、パルス幅の計測（復調）をハードウェア単体で処理します。</p>
+
+    <div class="note">
+        <strong>ハードウェア設計上の注意点:</strong><br>
+        DShot600は立ち上がりエッジが非常に急峻なため、浮遊容量による信号の反射やオーバーシュートが問題になるケースがあります。FCの出力ピンとESCの入力ピンの間には、インピーダンス整合とノイズ抑制のために必ず <strong>10&Omega;～100&Omega; のダンピング抵抗</strong> を直列に挿入してください。
+    </div>
+
+</body>
+</html>
