@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>なぜオイラー角ではダメなのか？とクォータニオンの仕組み</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            --primary: #0284c7;
+            --accent: #e11d48;
+            --success: #0d9488;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.7;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: var(--primary);
+            font-size: 1.4rem;
+            margin-top: 0;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--primary);
+            padding-left: 12px;
+        }
+
+        p {
+            margin: 0 0 16px 0;
+        }
+
+        p:last-child {
+            margin-bottom: 0;
+        }
+
+        .alert-box {
+            background-color: #fff1f2;
+            border: 1px solid #fecdd3;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            color: #9f1239;
+        }
+
+        .alert-title {
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .param-list {
+            list-style: none;
+            padding: 0;
+            margin: 16px 0 0 0;
+        }
+
+        .param-item {
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .param-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .badge {
+            background-color: var(--primary);
+            color: #ffffff;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 16px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            min-width: 60px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .param-desc {
+            flex: 1;
+        }
+
+        .highlight {
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .important {
+            color: var(--accent);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>なぜ「オイラー角（ロール・ピッチ・ヨー）」ではダメなのか？</h1>
+        <div class="subtitle">ドローン制御における姿勢表現の課題とクォータニオン</div>
+    </header>
+
+    <main>
+        <section>
+            <h2>オイラー角の限界とジンバルロック</h2>
+            <p>
+                私たちが普段使う「右に20度（ロール）、前に10度（ピッチ）、左に30度（ヨー）」という表現（オイラー角）は、人間にとって非常に理解しやすい方法です。
+            </p>
+            <p>
+                しかし、これは<span class="highlight">「1つの軸ずつ、順番に回転させる」</span>というルールに基づいています。順番に回していくと、ピッチが真上（90度）を向いた瞬間に、ロール軸とヨー軸が完全に重なってしまい、<span class="important">「どっちに回しても同じ動きになってしまう（自由度が1つ消える）」</span>という現象が起きます。
+            </p>
+            <div class="alert-box">
+                <div class="alert-title">⚠️ これがジンバルロックです</div>
+                ドローンがこの状態になると、自分が今どう傾いているのかマイコンがパニックを起こし、制御不能になって墜落してしまいます。
+            </div>
+        </section>
+
+        <section>
+            <h2>クォータニオンの考え方：1発で回す！</h2>
+            <p>
+                オイラー角が「3つの軸で順番に回す」のに対して、クォータニオンは<span class="highlight">「任意のナナメの軸を1本決めて、そこを中心に1発でギュッと回す」</span>という考え方をします。
+            </p>
+            <p>
+                この「どのナナメの軸（3次元の方向）」を「どれくらい回す（角度）」かという情報を、4つの数字（w, x, y, z）にまとめたものがクォータニオンです。
+            </p>
+
+            <ul class="param-list">
+                <li class="param-item">
+                    <span class="badge">w</span>
+                    <span class="param-desc"><span class="highlight">どれくらい回すか</span>（回転角の情報を担当）</span>
+                </li>
+                <li class="param-item">
+                    <span class="badge">x, y, z</span>
+                    <span class="param-desc"><span class="highlight">どの向きの軸で回すか</span>（3次元の回転軸の担当）</span>
+                </li>
+            </ul>
+
+            <p style="margin-top: 16px;">
+                最初から「1本の軸で1発で回す」ため、軸が重なるという概念自体がなく、<span class="highlight">ジンバルロックが絶対に起きません。</span>
+            </p>
+        </section>
+
+        <section>
+            <h2>ドローンのプログラムの中で何が起きている？</h2>
+            <p>
+                「目標の姿勢」と「今の姿勢」のズレ（エラー）を計算するとき、オイラー角なら引き算ですが、クォータニオンでは<span class="highlight">掛け算（逆クォータニオンの合成）</span>を使います。
+            </p>
+            <p>
+                これにより、<span class="highlight">「あとどのナナメ軸に、どれくらい回せば目標に追いつくか」</span>が分かります。
+            </p>
+        </section>
+    </main>
+</div>
+
+</body>
+</html>
