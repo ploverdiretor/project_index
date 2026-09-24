@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP-NOW ドローン通信プロトコル仕様書 (Ver 1.4)</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        h1 {
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+            color: #007bff;
+        }
+        h2 {
+            border-bottom: 2px solid #6c757d;
+            padding-bottom: 5px;
+            color: #495057;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #343a40;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #fff;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #e9ecef;
+            color: #495057;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f1f3f5;
+        }
+        code {
+            background-color: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: #212529;
+            color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ESP-NOW ドローン通信プロトコル仕様書 (Ver 1.4)</h1>
+
+    <h2>1. 概要</h2>
+    <p>本仕様書は、ドローン機体側マイコン（<strong>ESP32-S3</strong>）と、コントローラー側マイコン（<strong>ESP32-C6</strong>）間における、ESP-NOWを用いたリアルタイム双方向通信プロトコルについて定義する。</p>
+
+    <h2>2. 通信方式・基本要件</h2>
+    <ul>
+        <li><strong>通信レイヤー:</strong> ESP-NOW (2.4GHz 帯独自プロトコル)</li>
+        <li><strong>通信モード:</strong> 1対1（ピア・ツー・ピア）</li>
+        <li><strong>データ配置（エンディアン）:</strong> リトルエンディアン (Little Endian)</li>
+        <li><strong>アライメント:</strong> データのズレを防ぐため、1バイト境界でパッキングを行う（<code>#pragma pack(1)</code> 相当）。</li>
+        <li><strong>暗号化:</strong> 低遅延化および制御データのリアルタイム性を最優先とするため、ESP-NOWの暗号化（Key設定）は行わない。</li>
+    </ul>
+
+    <h2>3. 共通パケットフレーム構造</h2>
+    <p>すべての送信パケットは、先頭の2バイトに共通のヘッダ領域を持つ。これにより、将来的なデータ種類の追加（拡張）やパケットロスの検知を可能にする。</p>
+    <table>
+        <thead>
+            <tr>
+                <th>オフセット (Byte)</th>
+                <th>フィールド名</th>
+                <th>データ型</th>
+                <th>説明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>0</td>
+                <td><strong>Message ID</strong></td>
+                <td><code>uint8_t</code></td>
+                <td>パケットの種類を識別するID（4項参照）</td>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td><strong>Sequence Number</strong></td>
+                <td><code>uint8_t</code></td>
+                <td>送信するたびに <code>0</code> ～ <code>255</code> までインクリメントされる連番。パケットロスの検出や重複排除に使用する。</td>
+            </tr>
+            <tr>
+                <td>2 〜</td>
+                <td><strong>Payload</strong></td>
+                <td>可変</td>
+                <td>各Message IDに応じた固有データ（5項参照）</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>4. メッセージID (Message ID) 定義一覧</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID (Hex)</th>
+                <th>識別名</th>
+                <th>通信方向</th>
+                <th>説明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>0x01</code></td>
+                <td><code>MSG_ID_CONTROL</code></td>
+                <td>コントローラー → ドローン</td>
+                <td>操縦スティック（操作系）データ</td>
+            </tr>
+            <tr>
+                <td><code>0x02</code></td>
+                <td><code>MSG_ID_TELEMETRY</code></td>
+                <td>ドローン → コントローラー</td>
+                <td>機体ステータス（返信・テレメトリ）データ</td>
+            </tr>
+            <tr>
+                <td><code>0x10</code></td>
+                <td><code>MSG_ID_PID_PITCH</code></td>
+                <td>コントローラー → ドローン</td>
+                <td>ピッチ軸のPIDパラメータ</td>
+            </tr>
+            <tr>
+                <td><code>0x11</code></td>
+                <td><code>MSG_ID_PID_ROLL</code></td>
+                <td>コントローラー → ドローン</td>
+                <td>ロール軸のPIDパラメータ</td>
+            </tr>
+            <tr>
+                <td><code>0x12</code></td>
+                <td><code>MSG_ID_PID_YAW</code></td>
+                <td>コントローラー → ドローン</td>
+                <td>ヨー軸のPIDパラメータ</td>
+            </tr>
+            <tr>
+                <td><code>0x13</code></td>
+                <td><code>MSG_ID_PID_ACK</code></td>
+                <td>ドローン → コントローラー</td>
+                <td>PID設定完了・アンサーバックパケット</td>
+            </tr>
+            <tr>
+                <td><code>0x20</code></td>
+                <td><code>MSG_ID_CALIB_REQ</code></td>
+                <td>コントローラー → ドローン</td>
+                <td>キャリブレーション要求パケット</td>
+            </tr>
+            <tr>
+                <td><code>0x21</code></td>
+                <td><code>MSG_ID_CALIB_RES</code></td>
+                <td>ドローン → コントローラー</td>
+                <td>キャリブレーション結果パケット</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>5. 各パケット・ペイロード詳細</h2>
+
+    <h3>5.1. 操作データパケット (<code>MSG_ID_CONTROL</code> : <code>0x01</code>)</h3>
+    <p>総パケットサイズ: 18 バイト / 送信頻度: 推奨 20ms〜50ms 周期</p>
+    <table>
+        <thead>
+            <tr>
+                <th>オフセット</th>
+                <th>フィールド名</th>
+                <th>データ型</th>
+                <th>単位 / 範囲</th>
+                <th>説明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>0</td><td>msg_id</td><td><code>uint8_t</code></td><td>固定 (<code>0x01</code>)</td><td>メッセージID</td></tr>
+            <tr><td>1</td><td>seq_num</td><td><code>uint8_t</code></td><td><code>0 ~ 255</code></td><td>シーケンス番号</td></tr>
+            <tr><td>2 ~ 5</td><td>throttle</td><td><code>float</code></td><td><code>%</code> (<code>0.00 ~ 100.00</code>)</td><td>スロットル出力</td></tr>
+            <tr><td>6 ~ 9</td><td>pitch</td><td><code>float</code></td><td><code>°</code> または <code>%</code> (<code>-100.00 ~ 100.00</code>)</td><td>ピッチ軸制御量</td></tr>
+            <tr><td>10 ~ 13</td><td>roll</td><td><code>float</code></td><td><code>°</i> または <code>%</code> (<code>-100.00 ~ 100.00</code>)</td><td>ロール軸制御量</td></tr>
+            <tr><td>14 ~ 17</td><td>yaw</td><td><code>float</code></td><td><code>°/s</code> または <code>%</code> (<code>-100.00 ~ 100.00</code>)</td><td>ヨー軸制御量</td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.2. テレメトリデータパケット (<code>MSG_ID_TELEMETRY</code> : <code>0x02</code>)</h3>
+    <p>総パケットサイズ: 34 バイト / 送信頻度: 操縦パケット受信時の返信（同期モード推奨）</p>
+    <table>
+        <thead>
+            <tr>
+                <th>オフセット</th>
+                <th>フィールド名</th>
+                <th>データ型</th>
+                <th>単位 / 範囲</th>
+                <th>説明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>0</td><td>msg_id</td><td><code>uint8_t</code></td><td>固定 (<code>0x02</code>)</td><td>メッセージID</td></tr>
+            <tr><td>1</td><td>seq_num</td><td><code>uint8_t</code></td><td><code>0 ~ 255</code></td><td>シーケンス番号</td></tr>
+            <tr><td>2 ~ 5</td><td>motor1</td><td><code>float</code></td><td><code>%</code> または PWM値</td><td>モーター1の現在出力（フロント左等）</td></tr>
+            <tr><td>6 ~ 9</td><td>motor2</td><td><code>float</code></td><td><code>%</code> または PWM値</td><td>モーター2の現在出力（フロント右等）</td></tr>
+            <tr><td>10 ~ 13</td><td>motor3</td><td><code>float</code></td><td><code>%</code> または PWM値</td><td>モーター3の現在出力（リア左等）</td></tr>
+            <tr><td>14 ~ 17</td><td>motor4</td><td><code>float</code></td><td><code>%</code> または PWM値</td><td>モーター4の現在出力（リア右等）</td></tr>
+            <tr><td>18 ~ 21</td><td>battery_voltage</td><td><code>float</code></td><td><code>V</code> (ボルト)</td><td>バッテリーの現在電圧値</td></tr>
+            <tr><td>22 ~ 25</td><td>current_pitch</td><td><code>float</code></td><td><code>°</code> (<code>-180.0 ~ 180.0</code>)</td><td>現在のピッチ角（機体の前後傾き）</td></tr>
+            <tr><td>26 ~ 29</td><td>current_roll</td><td><code>float</code></td><td><code>°</code> (<code>-180.0 ~ 180.0</code>)</td><td>現在のロール角（機体の左右傾き）</td></tr>
+            <tr><td>30 ~ 33</td><td>current_yaw</td><td><code>float</code></td><td><code>°</code> (<code>-180.0 ~ 180.0</code>)</td><td>現在のヨー角（機体の向き）</td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.3. PIDパラメータ調整パケット (<code>0x10</code>, <code>0x11</code>, <code>0x12</code> 共通)</h3>
+    <p>総パケットサイズ: 18 バイト / 送信頻度: 設定変更時のみ（単発またはバースト送信）</p>
+    <table>
+        <thead>
+            <tr>
+                <th>オフセット</th>
+                <th>フィールド名</th>
+                <th>データ型</th>
+                <th>単位 / 範囲</th>
+                <th>説明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>0</td><td>msg_id</td><td><code>uint8_t</code></td><td><code>0x10</code>, <code>0x11</code>, <code>0x12</code></td><td>対象の軸を識別するID</td></tr>
+            <tr><td>1</td><td>seq_num</td><td><code>uint8_t</code></td><td><code>0 ~ 255</code></td><td>シーケンス番号</td></tr>
+            <tr><td>2 ~ 5</td><td>outer_p</td><td><code>float</code></td><td>任意の実数</td><td>アウター（外ループ・角度）制御の Pゲイン</td></tr>
+            <tr><td>6 ~ 9</td><td>inner_p</td><td><code>float</code></td><td>任意の実数</td><td>インナー（内ループ・角速度）制御の Pゲイン</td></tr>
+            <tr><td>10 ~ 13</td><td>inner_i</td><td><code>float</code></td><td>任意の実数</td><td>インナー（内ループ・角速度）制御の Iゲイン</td></tr>
+            <tr><td>14 ~ 17</td><td>inner_d</td><td><code>float</code></td><td>任意の実数</td><td>インナー（内ループ・角速度）制御の Dゲイン</td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.4. PIDアンサーバックパケット (<code>MSG_ID_PID_ACK</code> : <code>0x13</code>)</h3>
+    <p>総パケットサイズ: 20 バイト / 送信頻度: PIDパケット受信直後に単発返信</p>
+    <table>
+        <thead>
+            <tr>
+                <th>オフセット</th>
+                <th>フィールド名</th>
+                <th>データ型</th>
+                <th>単位 / 範囲</th>
+                <th>説明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>0</td><td>msg_id</td><td><code>uint8_t</code></td><td>固定 (<code>0x13</code>)</td><td>メッセージID</td></tr>
+            <tr><td>1</td><td>seq_num</td><td><code>uint8_t</code></td><td><code>0 ~ 255</code></td><td>シーケンス番号</td></tr>
+            <tr><td>2</td><td>ack_target_id</td><td><code>uint8_t</code></td><td><code>0x10</code>, <code>0x11</code>, <code>0x12</code></td><td>どの軸の書き換えに対する応答か</td></tr>
+            <tr><td>3</td><td>status</td><td><code>uint8_t</code></td><td><code>0</code>: 成功, <code>1</code>: エラー</td><td>設定更新の成否ステータス</td></tr>
+            <tr><td>4 ~ 7</td><td>applied_outer_p</td><td><code>float</code></td><td>任意の実数</td><td>実際に適用されたアウターPゲイン</td></tr>
+            <tr><td>8 ~ 11</td><td>applied_inner_p</td><td><code>float</code></td><td>任意の実数</td><td>実際に適用されたインナーPゲイン</td></tr>
+            <tr><td>12 ~ 15</td><td>applied_inner_i</td><td><code>float</code></td><td>任意の実数</td><td>実際に適用されたインナーIゲイン</td></tr>
+            <tr><td>16 ~ 19</td><td>applied_inner_d</td><td><code>float</code></td><td>任意の実数</td><td>実際に適用されたインナーDゲイン</td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.5. キャリブレーション要求パケット (<code>MSG_ID_CALIB_REQ</code> : <code>0x20</code>)</h3>
+    <p>総パケットサイズ: 3 バイト / 送信頻度: 設定変更時のみ（単発）</p>
+    <table>
+        <thead>
+            <tr>
+                <th>オフセット</th>
+                <th>フィールド名</th>
+                <th>データ型</th>
+                <th>値 / 範囲</th>
+                <th>説明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>0</td><td>msg_id</td><td><code>uint8_t</code></td><td>固定 (<code>0x20</code>)</td><td>メッセージID</td></tr>
+            <tr><td>1</td><td>seq_num</td><td><code>uint8_t</code></td><td><code>0 ~ 255</code></td><td>シーケンス番号</td></tr>
+            <tr><td>2</td><td>calib_type</td><td><code>uint8_t</code></td><td><code>0x00</code>: 一括, <code>0x01</code>: ジャイロ, <code>0x02</code>: 加速度, <code>0x03</code>: コンパス</td><td>校正対象の指定</td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.6. キャリブレーション結果パケット (<code>MSG_ID_CALIB_RES</code> : <code>0x21</code>)</h3>
+    <p>総パケットサイズ: 4 バイト / 送信頻度: 校正処理完了時に単発返信</p>
+    <table>
+        <thead>
+            <tr>
+                <th>オフセット</th>
+                <th>フィールド名</th>
+                <th>データ型</th>
+                <th>値 / 範囲</th>
+                <th>説明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>0</td><td>msg_id</td><td><code>uint8_t</code></td><td>固定 (<code>0x21</code>)</td><td>メッセージID</td></tr>
+            <tr><td>1</td><td>seq_num</td><td><code>uint8_t</code></td><td><code>0 ~ 255</code></td><td>シーケンス番号</td></tr>
+            <tr><td>2</td><td>calib_type</td><td><code>uint8_t</code></td><td><code>0x00 ~ 0x03</code></td><td>要求された calib_type をコピー</td></tr>
+            <tr><td>3</td><td>result_code</td><td><code>uint8_t</code></td><td><code>0x00</code>: 成功, <code>0x01</code>: 失敗, <code>0x02</code>: 拒否</td><td>校正結果のステータスコード</td></tr>
+        </tbody>
+    </table>
+
+    <h2>6. 将来の拡張に関するガイドライン</h2>
+    <ol>
+        <li><strong>新しいデータの追加:</strong> GPS情報や新たなセンサー値を送る必要が出た場合は、<code>0x30</code> 以降などの新しいIDを割り当て、新規のペイロード構造を定義する。</li>
+        <li><strong>パケットサイズ制限:</strong> ESP-NOWの仕様上、全体の最大サイズは <strong>250バイト</strong> である。拡張時もこれを超えないこと。</li>
+        <li><strong>データ型の選定:</strong> CPUアーキテクチャの違い（XtensaとRISC-V）による影響を避けるため、環境依存のある <code>int</code> ではなく、サイズが保証されている <code>float</code> や <code>uint8_t</code> などの固定長データ型を必ず使用すること。</li>
+    </ol>
+
+</body>
+</html>
