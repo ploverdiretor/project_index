@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP-NOW パケット定義書【受信編】</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f7f6;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #e67e22;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+        h2 {
+            color: #2980b9;
+            border-left: 5px solid #e67e22;
+            padding-left: 10px;
+            margin-top: 30px;
+            background-color: #edf2f7;
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0 30px 0;
+            background-color: #fff;
+        }
+        th, td {
+            border: 1px solid #dbdbdb;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 0.95em;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .dir-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: white;
+            background-color: #e67e22;
+        }
+        code {
+            background-color: #f8f1e5;
+            color: #c0392b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: Consolas, monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ESP-NOW パケット定義仕様書【受信・コマンド編】</h1>
+    <p>コントローラーから送信され、ドローン側が受信・処理するパケットおよび各種制御コマンドの定義です。</p>
+
+    <h2>1. フライト操作パケット (0x7B7B7B7B)</h2>
+    <p>操縦スティックの入力値をドローンへリアルタイムに伝達します。<span class="dir-tag">コントローラー ➔ ドローン</span></p>
+    <ul>
+        <li><strong>判定基準：</strong> データ受信長 <code>20 Byte</code> ── かつ先頭4バイトが <code>0x7B7B7B7B</code></li>
+    </ul>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">オフセット (Byte)</th>
+                <th style="width: 20%;">変数名</th>
+                <th style="width: 15%;">データ型</th>
+                <th style="width: 50%;">仕様・内部スケーリング</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>0 〜 3</td>
+                <td><code>packetHeader</code></td>
+                <td>uint32_t</td>
+                <td>識別用ヘッダー。固定値 <code>0x7B7B7B7B</code></td>
+            </tr>
+            <tr>
+                <td>4 〜 7</td>
+                <td><code>throttle</code></td>
+                <td>int</td>
+                <td>スロットル操作量 (0 〜 1000)</td>
+            </tr>
+            <tr>
+                <td>8 〜 11</td>
+                <td><code>pitch</code></td>
+                <td>int</td>
+                <td>ピッチ操作量 (-1000 〜 1000) ➔ 内部で最大±30度(ラジアン)に変換</td>
+            </tr>
+            <tr>
+                <td>12 〜 15</td>
+                <td><code>roll</code></td>
+                <td>int</td>
+                <td>ロール操作量 (-1000 〜 1000) ➔ 内部で最大±30度(ラジアン)に変換</td>
+            </tr>
+            <tr>
+                <td>16 〜 19</td>
+                <td><code>yaw</code></td>
+                <td>int</td>
+                <td>ヨー操作量 (-1000 〜 1000) ➔ 内部で最大±30度(ラジアン)に変換</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. モーターテスト用個別パケット (構造体 message)</h2>
+    <p>各調整用スライダーから直接4chモーターを個別に回すためのデータです。<span class="dir-tag">コントローラー ➔ ドローン</span></p>
+    <ul>
+        <li><strong>判定基準：</strong> データ受信長 = <code>16 Byte</code> (識別ヘッダーなし、サイズで判定)</li>
+    </ul>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">オフセット (Byte)</th>
+                <th style="width: 25%;">変数名</th>
+                <th style="width: 15%;">データ型</th>
+                <th style="width: 45%;">仕様・制限</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>0 〜 3</td>
+                <td><code>sliderValue[0]</code></td>
+                <td>int</td>
+                <td>モーター1駆動値 (0 〜 1000) ※10以下は停止、最大50%出力に安全制限</td>
+            </tr>
+            <tr>
+                <td>4 〜 7</td>
+                <td><code>sliderValue[1]</code></td>
+                <td>int</td>
+                <td>モーター2駆動値 (0 〜 1000) ※10以下は停止、最大50%出力に安全制限</td>
+            </tr>
+            <tr>
+                <td>8 〜 11</td>
+                <td><code>sliderValue[2]</code></td>
+                <td>int</td>
+                <td>モーター3駆動値 (0 〜 1000) ※10以下は停止、最大50%出力に安全制限</td>
+            </tr>
+            <tr>
+                <td>12 〜 15</td>
+                <td><code>sliderValue[3]</code></td>
+                <td>int</td>
+                <td>モーター4駆動値 (0 〜 1000) ※10以下は停止、最大50%出力に安全制限</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>3. システム制御コマンド (単発4バイトパケット)</h2>
+    <p>特定のボタンを押した際に、1回だけ送信される4バイト固定のシステム要求です。<span class="dir-tag">コントローラー ➔ ドローン</span></p>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">ヘッダー値 (Hex)</th>
+                <th style="width: 25%;">コマンド名</th>
+                <th style="width: 50%;">ドローン側の内部処理動作</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>0x7C7C7C7C</code></td>
+                <td>センサー校正開始</td>
+                <td>モーター出力を即時遮断。BNO055キャリブレーション処理に移行。</td>
+            </tr>
+            <tr>
+                <td><code>0x7F7F7F7F</code></td>
+                <td>PIDパラメータ読込</td>
+                <td>現在の機体内のPIDパラメータ(計12個)をコントローラーへ即時返送。</td>
+            </tr>
+            <tr>
+                <td><code>0x79797979</code></td>
+                <td>機体姿勢リセット</td>
+                <td>現在の物理的な傾きを「新しい水平基準面(q_reference)」として記憶。</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>

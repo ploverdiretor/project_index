@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32-S3 ドローン制御システム 簡易仕様書</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #2c3e50;
+            border-left: 5px solid #3498db;
+            padding-left: 10px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #34495e;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        code {
+            background-color: #eef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 0.9em;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-left: 5px solid #ffc107;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ESP32-S3 ドローン制御システム 簡易仕様書</h1>
+
+    <div class="highlight">
+        <strong>システム概要:</strong> 本システムは、XIAO ESP32-S3のデュアルコア機能を活用したクアッドコプター制御プログラムです。無線通信、センサー処理、PID制御計算を <strong>Core 0 (SensorTask)</strong> に集約し、ESC（モーター）への高速な出力更新を <strong>Core 1 (メインループ)</strong> で常時実行させることで、高いリアルタイム性と飛行安定性を両立しています。
+    </div>
+
+    <h2>1. ハードウェア構成 ＆ ピンアサイン</h2>
+    <p>マイコンには XIAO ESP32-S3 を使用し、IMUとの通信にはI2C、各ESCへの出力には高速なデジタルプロトコルである DShot600 を採用しています。</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>周辺機器 / 機能</th>
+                <th>ピン番号 (GPIO)</th>
+                <th>通信規格 / 備考</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>モーター 1 (ESC 1)</strong></td>
+                <td>GPIO 1</td>
+                <td>DShot600 (AlfredoDShotクラスインスタンス1)</td>
+            </tr>
+            <tr>
+                <td><strong>モーター 2 (ESC 2)</strong></td>
+                <td>GPIO 2</td>
+                <td>DShot600 (AlfredoDShotクラスインスタンス2)</td>
+            </tr>
+            <tr>
+                <td><strong>モーター 3 (ESC 3)</strong></td>
+                <td>GPIO 3</td>
+                <td>DShot600 (AlfredoDShotクラスインスタンス3)</td>
+            </tr>
+            <tr>
+                <td><strong>モーター 4 (ESC 4)</strong></td>
+                <td>GPIO 4</td>
+                <td>DShot600 (AlfredoDShotクラスインスタンス4)</td>
+            </tr>
+            <tr>
+                <td><strong>I2C SDA</strong></td>
+                <td>GPIO 5</td>
+                <td>BNO055接続用（予備アナログ入力とピン共用設定）</td>
+            </tr>
+            <tr>
+                <td><strong>I2C SCL</strong></td>
+                <td>GPIO 6</td>
+                <td>BNO055接続用</td>
+            </tr>
+            <tr>
+                <td><strong>内蔵LED</strong></td>
+                <td>GPIO 21</td>
+                <td>システムステータス、校正状態の視覚表示用</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. 無線通信仕様 (ESP-NOW)</h2>
+    <p>コントローラー（指定MACアドレス: <code>7C:2C:67:64:AC:A0</code>）と独自の構造体パケットを用いて双方向通信を行います。</p>
+
+    <h3>2.1 受信データ (コントローラー → ドローン)</h3>
+    <ul>
+        <li><strong>フライト操作パケット (0x7B7B7B7B):</strong> スロットル、ピッチ、ロール、ヨーのスティック操作量（最大±30度を目標角ラジアンに変換）。</li>
+        <li><strong>モーター個別テストパケット:</strong> 4chのモーター出力を個別駆動するスライダー値（デバッグ用）。</li>
+        <li><strong>校正要求コマンド (0x7C7C7C7C):</strong> BNO055のキャリブレーションシーケンスを強制的に開始。</li>
+        <li><strong>PIDパラメータパケット (48〜56バイト):</strong> 姿勢・角速度PIDのゲイン（計12個）をリアルタイムに上書き。</li>
+        <li><strong>PID読込要求コマンド (0x7F7F7F7F):</strong> 現在ドローン内部に保持されているPIDパラメータの返送を要求。</li>
+        <li><strong>姿勢リセットコマンド (0x79797979):</strong> 現在の機体の傾きを「新しい基準水平面」として記憶。</li>
+    </ul>
+
+    <h3>2.2 送信データ (ドローン → コントローラー)</h3>
+    <ul>
+        <li><strong>テレメトリパケット (0x7A7A7A7A):</strong> 基準水平面からの現在姿勢（ロール・ピッチ・ヨーのオイラー角×100）と、目指している目標角度。</li>
+        <li><strong>校正ステータスパケット (0x7C7C7C7C):</strong> Sys, Gyro, Accel, Mag の校正進捗（0〜3）。フラッシュ保存完了時は Mag に 0xFF を格納。</li>
+        <li><strong>PIDパラメータ返送パケット:</strong> 読込要求に応じ、現在の float ゲインに 100.0f を掛けて整数型に逆変換した48バイトのデータを送信。</li>
+        <li><strong>モーターステータスループバック:</strong> 各モーターの現在の計算出力値（0〜1000）を送信。</li>
+    </ul>
+
+    <h2>3. 制御アルゴリズム ＆ 安全機能</h2>
+    <h3>3.1 カスケード（二重ループ）PID制御</h3>
+    <ul>
+        <li><strong>サンプリング周期:</strong> 100Hz（タイマー割り込みによる10ms周期駆動）。</li>
+        <li><strong>姿勢表現:</strong> クォータニオン（四元数）を採用。特異点（ジンバルロック）のない全方位の誤差計算を実現。</li>
+        <li><strong>外側ループ（外乱・姿勢制御）:</strong> 目標クォータニオンと現在クォータニオンの誤差から、比例ゲイン（Kp_angle）を用いて「目標角速度」を算出。</li>
+        <li><strong>内側ループ（角速度制御）:</strong> 目標角速度とBNO055から得られる生の角速度の差分に対し、PID（比例・積分・微分）制御を実行して各軸の出力を決定。</li>
+    </ul>
+
+    <h3>3.2 安全・リセット機能</h3>
+    <ul>
+        <li><strong>アンチワインドアップ:</strong> 角速度の積分バッファ（I項）は過大出力を防ぐため、一律 -0.2f 〜 0.2f に制限。</li>
+        <li><strong>出力リミッター:</strong> 予期せぬ暴走を防ぐため、全モーターの一番のベースとなる最大出力比率を 0.5f (50%) に制限（MAX_POWER_LIMIT）。</li>
+        <li><strong>未アーム時（スロットルゼロ）の挙動:</strong>
+            <ul>
+                <li>モーターを強制停止し、PIDの積分バッファおよび過去の誤差バッファを 0.0f に常にクリア。</li>
+                <li>手動リセットで記憶したピッチ・ロールの「水平基準」を維持したまま、<strong>ヨー（Yaw）軸のみを現在の機体の向きにリアルタイム自動追従リセット</strong>。これにより離陸時のヨーの回転暴走を防止。</li>
+            </ul>
+        </li>
+    </ul>
+
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP-NOW パケット定義書【送信・共通編】</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f7f6;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #27ae60;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+        h2 {
+            color: #2980b9;
+            border-left: 5px solid #27ae60;
+            padding-left: 10px;
+            margin-top: 30px;
+            background-color: #edf2f7;
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0 30px 0;
+            background-color: #fff;
+        }
+        th, td {
+            border: 1px solid #dbdbdb;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 0.95em;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .dir-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: white;
+        }
+        .d2c { background-color: #27ae60; }
+        .bi { background-color: #8e44ad; }
+        code {
+            background-color: #f8f1e5;
+            color: #c0392b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ESP-NOW パケット定義仕様書【送信・共通編】</h1>
+    <p>ドローン側から自律送信されるデータ、および調整時に双方向でやり取りされる共通構造体の定義です。</p>
+
+    <h2>1. リアルタイム機体テレメトリパケット (0x7A7A7A7A)</h2>
+    <p>ドローンの現在の相対姿勢オイラー角と、現在の目標角度をコントローラーに送信します（100Hz周期）。<span class="dir-tag d2c">ドローン ➔ コントローラー</span></p>
+    <ul>
+        <li><strong>判定基準：</strong> 先頭4バイトが <code>0x7A7A7A7A</code></li>
+    </ul>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">オフセット (Byte)</th>
+                <th style="width: 20%;">変数名</th>
+                <th style="width: 15%;">データ型</th>
+                <th style="width: 50%;">仕様・備考（受信側で戻すべきスケール）</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>0 〜 3</td>
+                <td><code>packetHeader</code></td>
+                <td>uint32_t</td>
+                <td>固定ヘッダー。<code>0x7A7A7A7A</code></td>
+            </tr>
+            <tr>
+                <td>4 〜 5</td>
+                <td><code>yaw</code></td>
+                <td>int16_t</td>
+                <td>現在の機体のYaw角 (度×100) ➔ 100.0f で割って復元</td>
+            </tr>
+            <tr>
+                <td>6 〜 7</td>
+                <td><code>pitch</code></td>
+                <td>int16_t</td>
+                <td>現在の機体のPitch角 (度×100) ➔ 100.0f で割って復元</td>
+            </tr>
+            <tr>
+                <td>8 〜 9</td>
+                <td><code>roll</code></td>
+                <td>int16_t</td>
+                <td>現在の機体のRoll角 (度×100) ➔ 100.0f で割って復元</td>
+            </tr>
+            <tr>
+                <td>10 〜 11</td>
+                <td><code>target_yaw</code></td>
+                <td>int16_t</td>
+                <td>現在の機体の目標Yaw角 (度×100) ➔ 100.0f で割って復元</td>
+            </tr>
+            <tr>
+                <td>12 〜 13</td>
+                <td><code>target_pitch</code></td>
+                <td>int16_t</td>
+                <td>現在の機体の目標Pitch角 (度×100) ➔ 100.0f で割って復元</td>
+            </tr>
+            <tr>
+                <td>14 〜 15</td>
+                <td><code>target_roll</code></td>
+                <td>int16_t</td>
+                <td>現在の機体の目標Roll角 (度×100) ➔ 100.0f で割って復元</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. センサー校正ステータスパケット (0x7C7C7C7C)</h2>
+    <p>校正中および完了時に、各センサーのキャリブレーション状況をリアルタイム送信します。<span class="dir-tag d2c">ドローン ➔ コントローラー</span></p>
+    <ul>
+        <li><strong>判定基準：</strong> 先頭4バイトが <code>0x7C7C7C7C</code> (データ長 8 Byte)</li>
+    </ul>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">オフセット (Byte)</th>
+                <th style="width: 20%;">変数名</th>
+                <th style="width: 15%;">データ型</th>
+                <th style="width: 50%;">仕様・進捗ステータス値の意味</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>0 〜 3</td>
+                <td><code>packetHeader</code></td>
+                <td>uint32_t</td>
+                <td>固定ヘッダー。<code>0x7C7C7C7C</code></td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td><code>sys</code></td>
+                <td>uint8_t</td>
+                <td>システム全体の校正状態 (0 〜 3 / 3で完了)</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td><code>gyro</code></td>
+                <td>uint8_t</td>
+                <td>ジャイロセンサーの校正状態 (0 〜 3 / 3で完了)</td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td><code>accel</code></td>
+                <td>uint8_t</td>
+                <td>加速度センサーの校正状態 (0 〜 3 / 3で完了)</td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td><code>mag</code></td>
+                <td>uint8_t</td>
+                <td>地磁気センサー状態 (0〜3)。フラッシュ記憶・復元完了時は <code>0xFF</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>3. 共通 PIDパラメータパケット (双方向構造体)</h2>
+    <p>ゲインの「上書き送信」および「読み出し返送」で相互に利用されるパック化された構造体です。<span class="dir-tag bi">双方向通信</span></p>
+    <ul>
+        <li><strong>判定基準：</strong> データ長 <code>48 Byte</code> ── かつ <code>__attribute__((packed))</code> 属性必須</li>
+    </ul>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">オフセット (Byte)</th>
+                <th style="width: 25%;">変数名</th>
+                <th style="width: 15%;">データ型</th>
+                <th style="width: 45%;">対象軸 ＆ 内部スケーリング仕様</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>0 〜 3</td>
+                <td><code>pitch_outer_p</code></td>
+                <td>int</td>
+                <td>Pitch軸 外側姿勢 Pゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>4 〜 7</td>
+                <td><code>pitch_inner_p</code></td>
+                <td>int</td>
+                <td>Pitch軸 内側角速度 Pゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>8 〜 11</td>
+                <td><code>pitch_inner_i</code></td>
+                <td>int</td>
+                <td>Pitch軸 内側角速度 Iゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>12 〜 15</td>
+                <td><code>pitch_inner_d</code></td>
+                <td>int</td>
+                <td>Pitch軸 内側角速度 Dゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>16 〜 19</td>
+                <td><code>roll_outer_p</code></td>
+                <td>int</td>
+                <td>Roll軸 外側姿勢 Pゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>20 〜 23</td>
+                <td><code>roll_inner_p</code></td>
+                <td>int</td>
+                <td>Roll軸 内側角速度 Pゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>24 〜 27</td>
+                <td><code>roll_inner_i</code></td>
+                <td>int</td>
+                <td>Roll軸 内側角速度 Iゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>28 〜 31</td>
+                <td><code>roll_inner_d</code></td>
+                <td>int</td>
+                <td>Roll軸 内側角速度 Dゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>32 〜 35</td>
+                <td><code>yaw_outer_p</code></td>
+                <td>int</td>
+                <td>Yaw軸 外側姿勢 Pゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>36 〜 39</td>
+                <td><code>yaw_inner_p</code></td>
+                <td>int</td>
+                <td>Yaw軸 内側角速度 Pゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>40 〜 43</td>
+                <td><code>yaw_inner_i</code></td>
+                <td>int</td>
+                <td>Yaw軸 内側角速度 Iゲイン (内部で / 100.0f)</td>
+            </tr>
+            <tr>
+                <td>44 〜 47</td>
+                <td><code>yaw_inner_d</code></td>
+                <td>int</td>
+                <td>Yaw軸 内側角速度 Dゲイン (内部で / 100.0f)</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>

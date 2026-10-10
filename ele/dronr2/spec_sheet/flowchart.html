@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドローン制御システム 処理フローチャート</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f1f3f5;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+        .flow-section {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .flow-section h2 {
+            margin-top: 0;
+            color: #2980b9;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 10px;
+        }
+        .flow-chart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 0.9em;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ドローン制御システム 処理フローチャート</h1>
+
+    <div class="container">
+
+        <!-- 1. SETUP -->
+        <div class="flow-section">
+            <h2>1. 初期化処理 (Setup シーケンス)</h2>
+            <p>起動時にCore 0 / Core 1が共同で実行するハードウェア・通信の初期化フローです。</p>
+            <div class="flow-chart">
+[システム起動 / 開始]
+  │
+  ▼
+[シリアル通信(115200bps) & 内蔵LED(LOW点灯) 初期化]
+  │
+  ▼
+[BNO055 センサー初期化 (I2C) & 外部結晶発振器の有効化]
+  │
+  ▼
+[WiFi (STAモード) & ESP-NOW 初期化、受信・送信コールバック登録]
+  │
+  ▼
+[コントローラーのMACアドレスを通信ピアとして登録]
+  │
+  ▼
+＜フラッシュメモリ(Preferences)に過去の校正データはあるか？＞
+  ├── (はい) ➔ 校正データを復元 ➔ BNO055へ適用 ➔ コントローラーへ完了通知(Mag=0xFF)を送信
+  └── (いいえ) ➔ 【ループ待機】各センサーの校正進捗がすべて「3」(最高)になるまで待機（6面ダンス）
+                  ➔ 新しい校正データをフラッシュに記憶 ➔ コントローラーへ完了通知(Mag=0xFF)を送信
+  │
+  ▼
+[内蔵LED(HIGH消灯) ➔ ESC初期化 (DShotピン割り当て & モーター1〜4のインスタンス開始)]
+  │
+  ▼
+[ESC安全起動処理 (スロットル0.0fパルスを300回連続送信)]
+  │
+  ▼
+[100Hz (10ms) ハードウェアタイマー割り込みの開始（割り込み時にtimerFlagをtrue化）]
+  │
+  ▼
+[Core 0 固定の並列タスク (core0SensorTask) を生成・駆動]
+  │
+  ▼
+[Core 1 メインループ (loop) へ移行]
+            </div>
+        </div>
+
+        <!-- 2. CORE 0 TASK -->
+        <div class="flow-section">
+            <h2>2. センサー ＆ 制御計算タスク (Core 0 担当・常時ループ)</h2>
+            <p>10msに1回、センサー値を読み取って高度なクォータニオンPID制御計算と無線送信を行う中枢処理です。</p>
+            <div class="flow-chart">
+[SensorTask 常時ループ開始]
+  │
+  ▼
+＜① コントローラーからの PID読み込み要求フラグ(pidRequestRequested)はあるか？＞
+  └── ⚡(はい) ➔ 現在の内部ゲインに100倍を掛けて整数化 ➔ ESP-NOWで返送 ➔ フラグクリア
+  │
+  ▼
+＜② コントローラーからの 校正開始要求フラグ(calibrationRequested)はあるか？＞
+  └── ⚡(はい) ➔ モーター出力を強制ゼロにリセット
+                 ➔ 【ループ待機】300ms間隔で進捗を無線送信しながら、校正値が「3」になるまで待つ
+                 ➔ 新しいオフセットをフラッシュへ上書き保存 ➔ 完了通知(0xFF)を送信 ➔ フラグクリア
+  │
+  ▼
+＜③ 10msタイマーフラグ (timerFlag) はONか？＞
+  ├── (いいえ) ➔ 何もしず vTaskDelay(1ms) を挟んで、上記①の先頭処理へ戻る
+  └── (はい) ➔ timerFlag を false にクリアして以下の制御計算へ
+  │
+  ▼
+[BNO055から生の姿勢クォータニオンを取得して正規化(-1.0〜1.0)]
+[BNO055から角速度ベクトルを取得 ➔ ラジアンに変換 (x, y, z)]
+[受信済みの現在のスロットル比率(0.0〜1.0)を算出]
+  │
+  ▼
+＜④ 初回起動 または 姿勢リセットコマンド(0x79)を受信したか？＞
+  └── ⚡(はい) ➔ 現在の生のクォータニオンを「q_reference (基準水平面)」として固定記憶
+  │
+  ▼
+＜⑤ スロットルが 0.01 未満（未アーム状態）か？＞
+  ├── (はい: 地上待機中)
+  │     ➔ 手動リセット時のピッチ・ロールを維持しつつ、ヨー(Yaw)のみ現在の機体の向きで基準を自動合成
+  │     ➔ 各モーターの出力共有変数を「0」に固定 ➔ PIDの積分・過去誤差バッファをすべて「0」にクリア
+  └── (いいえ: 飛行・アーム中)
+        ➔ [相対姿勢算出] 基準水平(q_reference)と生姿勢から、機体の相対クォータニオン(q_current)を計算
+        ➔ [外側P制御] 目標姿勢(q_target)との誤差から、軸個別Pゲインを用いて目標角速度を算出
+        ➔ [内側PID制御] 目標角速度とジャイロ生の角速度の誤差から、軸個別PID計算を実行
+           ※積分項(I項)はアンチワインドアップとして -0.2 〜 0.2 にクランプ制限
+        ➔ [モーターミキシング] スロットルベース値に対し、ピッチ・ロール・ヨー出力を加減算
+           計算結果を 0.0 〜 MAX_POWER_LIMIT にクランプし、Core 1共有変数(sharedThrottle)を更新
+  │
+  ▼
+[テレメトリ送信] 相対姿勢(オイラー角)と目標オイラー角をコントローラーへ送信
+[ループバック送信] 前回の値から変化があった場合のみ、モーター出力をコントローラーへ送信
+  │
+  ▼
+[vTaskDelay(1ms)] ➔ ループ先頭へ戻る
+            </div>
+        </div>
+
+        <!-- 3. CORE 1 LOOP -->
+        <div class="flow-section">
+            <h2>3. モーター出力更新ループ (Core 1 担当・メイン loop)</h2>
+            <p>Arduino標準の loop() 関数です。Core 0の計算結果を遅延なくESCへ送信することに特化しています。</p>
+            <div class="flow-chart">
+[loop() メインループ開始]
+  │
+  ▼
+[Core 0 が高精度に書き換えた共有変数 (sharedThrottle 1〜4) の値をリアルタイムに読み出し]
+  │
+  ▼
+[DShotプロトコルを用いて、4つのESCオブジェクトにそれぞれスロットル出力を送信 (sendThrottle)]
+  │
+  ▼
+[delay(1ms) を実行してCPUを一時解放]
+  │
+  ▼
+[loop() の先頭に戻る]
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
